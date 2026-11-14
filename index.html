@@ -140,7 +140,7 @@ ol li{margin-bottom:6px}
 <script>
 "use strict";
 /* ---------- helpers ---------- */
-const APP_VERSION=9;
+const APP_VERSION=10;
 const LS='liftlog.v1', LSV='liftlog.view';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -187,13 +187,13 @@ function routineKeys(w){if(!w)return null;const k=new Set();if(w.routineId){k.ad
   const n=normName(w.name);if(n&&n!=='workout')k.add('n:'+n);return k.size?k:null}
 function sameRoutine(keys,w){if(!keys)return false;if(w.routineId&&keys.has('id:'+w.routineId))return true;const n=normName(w.name);if(n&&keys.has('n:'+n))return true;
   if(w.routineId){const r=S.routines[w.routineId];if(r&&keys.has('n:'+normName(r.name)))return true}return false}
-// Last time this exercise was done, preferring the same routine; falls back to any workout
+// Last time this exercise was done. In a routine (or a named workout) only that routine's history counts; unnamed workouts use any history.
 function lastFor(exId,cur){const keys=routineKeys(cur);let same=null,any=null;
   for(const w of liveW()){if(cur&&w.id===cur.id)continue;if(cur&&cur.date&&w.date>cur.date)continue;
     const en=w.entries.find(e=>e.exId===exId);if(!en)continue;const sets=en.sets.filter(hasData);if(!sets.length)continue;
     const c={date:w.date,createdAt:w.createdAt,sets,name:w.name};const newer=(a,b)=>!a||b.date>a.date||(b.date===a.date&&(b.createdAt||0)>(a.createdAt||0));
     if(newer(any,c))any=c;if(sameRoutine(keys,w)&&newer(same,c))same=c}
-  if(same){same.scoped=true;return same}if(any)any.scoped=false;return any}
+  if(keys){if(same)same.scoped=true;return same}if(any)any.scoped=false;return any}
 function historyFor(exId){const out=[];for(const w of liveW().sort(sortW)){const en=w.entries.find(e=>e.exId===exId);if(!en)continue;const sets=en.sets.filter(s=>hasData(s)||(s.media&&s.media.length));if(sets.length)out.push({w,sets})}return out}
 function lastUsedMap(){const m={};for(const w of liveW())for(const en of w.entries)if(!m[en.exId]||w.date>m[en.exId])m[en.exId]=w.date;return m}
 function settingsSummary(ex){return (ex?.settings||[]).filter(x=>x.k||x.v).map(x=>(x.k?x.k+' ':'')+x.v).join(' · ')}
@@ -345,7 +345,7 @@ function vWorkout(){const w=S.workouts[view.workoutId];if(!w||w.deleted){view.wo
     <button class="machine ${sum?'':'empty'}" data-a="machine" data-id="${en.exId}">⚙︎ ${sum?esc(sum):'Add machine settings'}</button>
     ${ex&&ex.notes?`<div class="cue">${esc(ex.notes)}</div>`:''}
     ${en.target?`<div class="target">Target: ${esc(en.target)} reps</div>`:''}
-    ${last?`<div class="last">${last.scoped||!routineKeys(w)?`Last time (${shortDate(last.date)})`:`Last time, in ${esc(last.name||'another workout')} (${shortDate(last.date)})`}: ${last.sets.map(s=>esc(fmtSet(s))).join(' · ')}</div>`:''}
+    ${last?`<div class="last">Last time (${shortDate(last.date)}): ${last.sets.map(s=>esc(fmtSet(s))).join(' · ')}</div>`:''}
     <div class="set head"><span title="Tap a set number to mark it as a warm-up">SET</span><span>${S.unit.toUpperCase()}</span><span>REPS</span><span>NOTE</span></div>`;
     let wn=0;en.sets.forEach((s,j)=>{const ls=last&&(last.sets[j]||last.sets[last.sets.length-1]);const key=i+'-'+j;if(!s.warmup)wn++;
       h+=`<div class="set ${s.w!==''&&s.r!==''?'done':''} ${s.warmup?'warm':''}"><button class="n ${s.warmup?'wu':''}" data-a="toggleWarm" data-i="${i}" data-j="${j}" aria-label="${s.warmup?'Warm-up set, tap to make it a working set':'Set '+wn+', tap to mark as warm-up'}">${s.warmup?'W':wn}</button>
