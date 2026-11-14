@@ -177,45 +177,68 @@ function lastUsedMap(){const m={};for(const w of liveW())for(const en of w.entri
 function settingsSummary(ex){return (ex?.settings||[]).filter(x=>x.k||x.v).map(x=>(x.k?x.k+' ':'')+x.v).join(' · ')}
 function e1rm(s){const w=num(s.w),r=num(s.r);if(!w||!r||r>15)return 0;return r===1?w:w*(1+r/30)}
 
-/* ---------- cloud sync (Claude account) ---------- */
-let col=null,syncState='local',flushing=false,flushTimer=null;const dirty=new Set();
+/* ---------- GitHub sync (private data repo) ---------- */
+const LSG='liftlog.gh',LSGS='liftlog.ghsync';
+let gh=null,syncState='local',flushing=false,flushTimer=null,lastSync=0,syncErr='';const dirty=new Set();
+try{gh=JSON.parse(localStorage.getItem(LSG))||null}catch(e){}
+let ghCache={};try{ghCache=JSON.parse(localStorage.getItem(LSGS))||{}}catch(e){}
+function saveGhCache(){try{localStorage.setItem(LSGS,JSON.stringify(ghCache))}catch(e){}}
 const monthOf=w=>'m-'+(w.date||'0000-00').slice(0,7);
-function syncLabel(){return {local:'Saved on this phone only. Download a backup now and then so nothing gets lost.',syncing:'Syncing…',synced:'Synced to your Claude account, so it shows up on any device you open this on.',error:'Couldn’t reach sync just now. Changes are saved on this device and will retry.'}[syncState]}
-function setSync(s){syncState=s;const d=$('#top .sync');if(d){d.className='sync '+s;d.title=syncLabel()}}
-function markDirty(k){dirty.add(k);clearTimeout(flushTimer);flushTimer=setTimeout(flush,900)}
+function syncLabel(){if(!gh)return 'Saved on this phone only. Connect GitHub below to back up and sync automatically.';
+  return {syncing:'Syncing with GitHub…',synced:'Synced to '+gh.repo+(lastSync?' · '+new Date(lastSync).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):''),error:'Couldn’t reach GitHub'+(syncErr?' ('+syncErr+')':'')+'. Changes are saved on this phone and will sync later.',local:'Connected to '+gh.repo}[syncState]}
+function setSync(s,err){syncState=s;if(err!==undefined)syncErr=err;const d=$('#top .sync');if(d){d.className='sync '+s;d.title=syncLabel()}const l=$('#syncLine');if(l)l.textContent=syncLabel()}
+function markDirty(k){dirty.add(k);if(!gh)return;clearTimeout(flushTimer);flushTimer=setTimeout(flush,3000)}
 function touchW(w,prevMonth){w.updatedAt=now();markDirty(monthOf(w));if(prevMonth&&prevMonth!==monthOf(w))markDirty(prevMonth);saveLocal()}
 function touchEx(e){e.updatedAt=now();markDirty('meta');saveLocal()}
 function bodyFor(k){if(k==='meta')return {unit:S.unit,unitAt:S.unitAt||0,exercises:S.exercises,routines:S.routines};const ws={};for(const w of Object.values(S.workouts))if(monthOf(w)===k)ws[w.id]=w;return {workouts:ws}}
-async function writeDoc(k){const body=bodyFor(k);try{await col.doc(k).set(body)}catch(e){if(e&&e.code==='unavailable'){await sleep(700+Math.random()*900);await col.doc(k).set(body);return}throw e}}
-async function flush(){if(!col||flushing||!dirty.size)return;flushing=true;setSync('syncing');let failed=false;
-  while(dirty.size){const k=dirty.values().next().value;dirty.delete(k);
-    try{await writeDoc(k)}catch(e){dirty.add(k);failed=true;const c=e&&e.code;
-      if(['revoked','not_granted','capability_disabled','capability_removed'].includes(c)){col=null;setSync('local')}
-      else{setSync('error');if(c==='quota_exceeded')toast('Sync storage is full. Your data is still on this device.');setTimeout(flush,20000)}
-      break}}
-  flushing=false;if(!failed&&col)setSync('synced')}
-function withTimeout(p,ms){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej({code:'timeout'}),ms))])}
-async function pull(){if(!col)return;setSync('syncing');let snap;
-  try{snap=await withTimeout(col.get(),10000)}catch(e){setSync(col?'error':'local');setTimeout(()=>pull().then(render),30000);return}
-  const remoteIdx={};let haveMeta=false;
-  for(const d of snap.docs){const b=d.data()||{};
-    if(d.id==='meta'){haveMeta=true;
-      if((b.unitAt||0)>(S.unitAt||0)){S.unit=b.unit||'lb';S.unitAt=b.unitAt}else if((S.unitAt||0)>(b.unitAt||0))dirty.add('meta');
-      const re=b.exercises||{};
-      for(const id in re){const l=S.exercises[id];if(!l||(re[id].updatedAt||0)>(l.updatedAt||0))S.exercises[id]=re[id]}
-      for(const id in S.exercises){const r=re[id];if(!r||(S.exercises[id].updatedAt||0)>(r.updatedAt||0))dirty.add('meta')}
-      const rr=b.routines||{};for(const id in rr){const l=S.routines[id];if(!l||(rr[id].updatedAt||0)>(l.updatedAt||0))S.routines[id]=rr[id]}
-      for(const id in S.routines){const r=rr[id];if(!r||(S.routines[id].updatedAt||0)>(r.updatedAt||0))dirty.add('meta')}
-    }else if(d.id.startsWith('m-')){const rw=b.workouts||{};remoteIdx[d.id]={};
-      for(const id in rw){remoteIdx[d.id][id]=rw[id].updatedAt||0;const l=S.workouts[id];if(!l||(rw[id].updatedAt||0)>(l.updatedAt||0))S.workouts[id]=rw[id]}}}
-  if(!haveMeta&&Object.keys(S.exercises).length)dirty.add('meta');
-  for(const m in remoteIdx)for(const id in remoteIdx[m]){const l=S.workouts[id];if(monthOf(l)!==m||(l.updatedAt||0)!==remoteIdx[m][id])dirty.add(m)}
-  for(const w of Object.values(S.workouts)){const m=monthOf(w);if(!remoteIdx[m]||remoteIdx[m][w.id]!==(w.updatedAt||0))dirty.add(m)}
-  saveLocal();setSync('synced');if(dirty.size)flush()}
-async function initSync(){try{if(!window.claude||!claude.use)return;
-    const [db,user]=await Promise.all([claude.use('db'),claude.use('user')]);if(!db||!user)return;
-    const id=await user.id();if(!id)return;col=db.collection('data/users/'+id);await pull();render()}catch(e){setSync('local')}}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&col&&!flushing&&!dirty.size){const a=document.activeElement;if(!a||!/INPUT|TEXTAREA|SELECT/.test(a.tagName))pull().then(render)}});
+function makeIdx(k,b){if(k==='meta'){const ex={},rt={};for(const id in b.exercises||{})ex[id]=b.exercises[id].updatedAt||0;for(const id in b.routines||{})rt[id]=b.routines[id].updatedAt||0;return {ex,rt,unitAt:b.unitAt||0}}
+  const o={};for(const id in b.workouts||{})o[id]=b.workouts[id].updatedAt||0;return o}
+function b64(str){const by=new TextEncoder().encode(str);let s='';for(let i=0;i<by.length;i+=0x8000)s+=String.fromCharCode.apply(null,by.subarray(i,i+0x8000));return btoa(s)}
+function ghHeaders(extra){return Object.assign({Authorization:'Bearer '+gh.token,'X-GitHub-Api-Version':'2022-11-28'},extra||{})}
+const ghUrl=p=>`https://api.github.com/repos/${gh.repo}/contents/${p}`;
+async function ghFetch(url,opts){let r;try{r=await fetch(url,Object.assign({cache:'no-store'},opts))}catch(e){throw {code:'network',msg:'no connection'}}
+  if(r.status===401)throw {code:'auth',msg:'token rejected'};if(r.status===403&&r.headers.get('x-ratelimit-remaining')!=='0')throw {code:'auth',msg:'token lacks access'};return r}
+async function ghPut(k,body,keepalive){const name=k+'.json',path='data/'+name;
+  const send=sha=>ghFetch(ghUrl(path),{method:'PUT',keepalive:!!keepalive,headers:ghHeaders({'Content-Type':'application/json'}),body:JSON.stringify({message:'Update '+name,content:b64(JSON.stringify(body)),sha:sha||undefined})});
+  let r=await send(ghCache[name]&&ghCache[name].sha);
+  if(r.status===409||r.status===422){const m=await ghFetch(ghUrl(path)+'?t='+now(),{headers:ghHeaders({Accept:'application/vnd.github+json'})});r=await send(m.ok?(await m.json()).sha:undefined)}
+  if(!r.ok)throw {code:'http',msg:'error '+r.status};const j=await r.json();ghCache[name]={sha:j.content.sha,idx:makeIdx(k,body)};saveGhCache()}
+async function flush(keepalive){if(!gh||flushing||!dirty.size)return;flushing=true;setSync('syncing');let failed=null;
+  while(dirty.size){const k=dirty.values().next().value;dirty.delete(k);try{await ghPut(k,bodyFor(k),keepalive)}catch(e){dirty.add(k);failed=e;break}}
+  flushing=false;
+  if(failed){setSync('error',failed.msg||'');if(failed.code!=='auth')setTimeout(flush,30000)}else{lastSync=now();setSync('synced','')}}
+function mergeBody(k,b){
+  if(k==='meta'){if((b.unitAt||0)>(S.unitAt||0)){S.unit=b.unit||'lb';S.unitAt=b.unitAt}
+    for(const [key,src] of [['exercises',b.exercises||{}],['routines',b.routines||{}]])for(const id in src){const l=S[key][id];if(!l||(src[id].updatedAt||0)>(l.updatedAt||0))S[key][id]=src[id]}}
+  else{const rw=b.workouts||{};for(const id in rw){const l=S.workouts[id];if(!l||(rw[id].updatedAt||0)>(l.updatedAt||0))S.workouts[id]=rw[id]}}}
+async function pull(){if(!gh||flushing)return;setSync('syncing');
+  try{const r=await ghFetch(ghUrl('data')+'?t='+now(),{headers:ghHeaders({Accept:'application/vnd.github+json'})});
+    let list=[];if(r.status===404)list=[];else if(!r.ok)throw {code:'http',msg:'error '+r.status};else list=await r.json();
+    const names=new Set();let metaIdx=null;const remoteIdx={};
+    for(const f of list){if(!/\.json$/.test(f.name))continue;const k=f.name.slice(0,-5);names.add(f.name);let idx;
+      if(ghCache[f.name]&&ghCache[f.name].sha===f.sha)idx=ghCache[f.name].idx;
+      else{const rr=await ghFetch(ghUrl('data/'+f.name)+'?t='+now(),{headers:ghHeaders({Accept:'application/vnd.github.raw+json'})});if(!rr.ok)throw {code:'http',msg:'error '+rr.status};
+        const b=await rr.json();mergeBody(k,b);idx=makeIdx(k,b);ghCache[f.name]={sha:f.sha,idx}}
+      if(k==='meta')metaIdx=idx;else remoteIdx[k]=idx}
+    for(const n in ghCache)if(!names.has(n))delete ghCache[n];saveGhCache();
+    if(!metaIdx){if(Object.keys(S.exercises).length||Object.keys(S.routines).length)dirty.add('meta')}
+    else{if((S.unitAt||0)!==(metaIdx.unitAt||0))dirty.add('meta');
+      for(const id in S.exercises)if((S.exercises[id].updatedAt||0)!==metaIdx.ex[id])dirty.add('meta');
+      for(const id in S.routines)if((S.routines[id].updatedAt||0)!==metaIdx.rt[id])dirty.add('meta')}
+    for(const m in remoteIdx)for(const id in remoteIdx[m]){const l=S.workouts[id];if(!l||monthOf(l)!==m||(l.updatedAt||0)!==remoteIdx[m][id])dirty.add(m)}
+    for(const w of Object.values(S.workouts)){const m=monthOf(w);if(!remoteIdx[m]||remoteIdx[m][w.id]!==(w.updatedAt||0))dirty.add(m)}
+    saveLocal();lastSync=now();setSync('synced','');if(dirty.size)await flush();return true}
+  catch(e){setSync('error',e.msg||'');return false}}
+async function ghConnect(repo,token){repo=repo.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/+$/,'').replace(/\.git$/,'');token=token.trim();
+  if(!/^[\w.-]+\/[\w.-]+$/.test(repo))return toast('Repo should look like shfriedland/lift-log-data');if(!token)return toast('Paste your token first');
+  const prev=gh;gh={repo,token};let r;try{r=await ghFetch(`https://api.github.com/repos/${repo}`,{headers:ghHeaders({Accept:'application/vnd.github+json'})})}catch(e){gh=prev;return toast('GitHub said: '+(e.msg||'error'))}
+  if(!r.ok){gh=prev;return toast(r.status===404?'Repo not found, or the token can’t see it':'GitHub said: error '+r.status)}
+  try{localStorage.setItem(LSG,JSON.stringify(gh))}catch(e){}if(!prev||prev.repo!==repo){ghCache={};saveGhCache()}
+  render();toast('Connected. Syncing…');const ok=await pull();render();if(ok)toast('Synced with GitHub')}
+function ghDisconnect(){gh=null;try{localStorage.removeItem(LSG)}catch(e){}setSync('local','');render();toast('Disconnected. Your data is still on this phone.')}
+document.addEventListener('visibilitychange',()=>{if(!gh)return;
+  if(document.visibilityState==='hidden'){if(dirty.size){clearTimeout(flushTimer);flush(true)}return}
+  if(!flushing&&!dirty.size){const a=document.activeElement;if(!a||!/INPUT|TEXTAREA|SELECT/.test(a.tagName))pull().then(ok=>{if(ok)render()})}});
 
 /* ---------- views ---------- */
 function render(){renderTop();const m=$('#main');
@@ -301,7 +324,13 @@ function vSettings(){return `
     <li>Choose that file here, check the column matching, and import.</li></ol>
     <label class="filebtn primary">Choose CSV file<input type="file" accept=".csv,text/csv,text/plain,text/comma-separated-values" id="csvFile" hidden></label>
     <div class="mut sm">CSV exports from Strong, Hevy, FitNotes and similar apps work too. Importing the same file again updates those workouts instead of duplicating them.</div></div>
-  <div class="card"><h3>Sync &amp; backup</h3><div class="sm" style="margin-bottom:6px">${esc(syncLabel())}</div>
+  <div class="card"><h3>Sync with GitHub</h3><div class="sm" id="syncLine" style="margin-bottom:8px">${esc(syncLabel())}</div>
+    ${gh?`<button class="ghost" data-a="syncNow">Sync now</button><button class="link red" data-a="ghDisconnect">Disconnect this phone</button>`:`
+    <ol class="sm"><li>On GitHub, make a <b>fine-grained token</b> with access to only your data repo and <b>Contents: Read and write</b>.</li><li>Paste it below and tap Connect. Your workouts then save to the repo automatically, and any device you connect gets the same data.</li></ol>
+    <input id="ghRepo" value="shfriedland/lift-log-data" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-bottom:8px">
+    <input id="ghToken" type="password" placeholder="Paste token (github_pat_…)" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button class="primary" style="margin-top:10px" data-a="ghConnect">Connect</button>`}</div>
+  <div class="card"><h3>Backup</h3>
     <button class="ghost" data-a="downloadBackup">Download backup file</button>
     <button class="ghost" data-a="copyBackup">Copy backup to clipboard</button>
     <label class="filebtn ghost">Restore from a backup file<input type="file" accept=".json,.txt,application/json,text/plain" id="jsonFile" hidden></label>
@@ -493,7 +522,10 @@ const ACT={
   downloadBackup(){const txt=JSON.stringify({app:'liftlog',v:1,unit:S.unit,unitAt:S.unitAt,exercises:S.exercises,workouts:S.workouts,routines:S.routines});
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download='lift-log-backup-'+today()+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('Backup saved')},
   pasteRestore(){sheetCtx={type:'paste'};openSheet(`<h2>Restore backup</h2><textarea id="pasteBox" style="height:200px;font-size:13px" placeholder="Paste backup text here"></textarea><button class="primary" style="margin-top:12px" data-a="doPaste">Restore</button>`)},
-  doPaste(){restoreText($('#pasteBox').value)}
+  doPaste(){restoreText($('#pasteBox').value)},
+  ghConnect(){ghConnect($('#ghRepo').value,$('#ghToken').value)},
+  ghDisconnect(){confirmSheet('Disconnect GitHub on this phone?','Your data stays on this phone and in the repo. You’d need to paste the token again to reconnect.','Disconnect',ghDisconnect)},
+  async syncNow(){const ok=await pull();if(ok){render();toast('Synced')}}
 };
 
 /* ---------- events ---------- */
@@ -525,7 +557,7 @@ document.addEventListener('change',e=>{const t=e.target;if(t.id!=='csvFile'&&t.i
   const rd=new FileReader();rd.onload=()=>{const txt=String(rd.result||'');if(t.id==='csvFile')startImport(txt);else restoreText(txt)};rd.onerror=()=>toast('Couldn’t read that file.');rd.readAsText(file);t.value=''});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='newExName')ACT.createExStandalone();if(e.key==='Enter'&&e.target.id==='exq'){const first=$('#exResults [data-a]');if(first)first.click()}});
 
-loadLocal();render();initSync();
+loadLocal();render();if(gh)pull().then(ok=>{if(ok)render()});
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
