@@ -253,7 +253,7 @@ function vWorkout(){const w=S.workouts[view.workoutId];if(!w||w.deleted){view.wo
     ${en.target?`<div class="target">Target: ${esc(en.target)} reps</div>`:''}
     ${last?`<div class="last">Last time (${shortDate(last.date)}): ${last.sets.map(s=>esc(fmtSet(s))).join(' · ')}</div>`:''}
     <div class="set head"><span>SET</span><span>${S.unit.toUpperCase()}</span><span>REPS</span><span>NOTE</span><span></span></div>`;
-    en.sets.forEach((s,j)=>{const ls=last&&last.sets[j];const key=i+'-'+j;
+    en.sets.forEach((s,j)=>{const ls=last&&(last.sets[j]||last.sets[last.sets.length-1]);const key=i+'-'+j;
       h+=`<div class="set ${s.done?'done':''}"><span class="n">${j+1}</span>
       <input inputmode="decimal" data-f="w" data-i="${i}" data-j="${j}" value="${esc(s.w)}" placeholder="${ls?esc(ls.w):''}">
       <input inputmode="numeric" data-f="r" data-i="${i}" data-j="${j}" value="${esc(s.r)}" placeholder="${ls?esc(ls.r):esc(tgtLow(en.target))}">
