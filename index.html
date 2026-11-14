@@ -272,8 +272,9 @@ function vWorkout(){const w=S.workouts[view.workoutId];if(!w||w.deleted){view.wo
 function vExList(){const lu=lastUsedMap();const list=liveEx().sort((a,b)=>a.name.localeCompare(b.name));
   let h=`<input class="search" data-f="exlq" placeholder="Search exercises" autocomplete="off"><button class="primary" data-a="newExSheet">+ New exercise</button>`;
   if(!list.length)h+=`<div class="empty">No exercises yet. They're created as you log, or when you import.</div>`;
-  for(const e of list){const sum=settingsSummary(e);
-    h+=`<button class="card exrow" data-a="openEx" data-id="${e.id}" data-name="${esc(e.name.toLowerCase())}"><div><b>${esc(e.name)}</b>${sum?`<div class="sm" style="color:#d6f57a">⚙︎ ${esc(sum)}</div>`:''}<div class="mut sm">${lu[e.id]?'Last done '+prettyDate(lu[e.id]):'Not logged yet'}</div></div><span class="mut">›</span></button>`}
+  list.sort((a,b)=>(a.category||'~').localeCompare(b.category||'~')||a.name.localeCompare(b.name));let lc=null;
+  for(const e of list){const sum=settingsSummary(e);const cat=e.category||'Other';if(cat!==lc){lc=cat;h+=`<div class="month" data-cat>${esc(cat)}</div>`}
+    h+=`<button class="card exrow" data-a="openEx" data-id="${e.id}" data-name="${esc((e.name+' '+(e.category||'')).toLowerCase())}"><div><b>${esc(e.name)}</b>${sum?`<div class="sm" style="color:#d6f57a">⚙︎ ${esc(sum)}</div>`:''}<div class="mut sm">${lu[e.id]?'Last done '+prettyDate(lu[e.id]):'Not logged yet'}</div></div><span class="mut">›</span></button>`}
   return h}
 
 const PRESETS=['Seat','Back pad','Chest pad','Leg pad','Handles','Pin / stack','Cable height','Bench angle','Start position','Range of motion'];
@@ -284,7 +285,7 @@ function msEditor(ex){return `<div data-ms="${ex.id}">${msRows(ex)}</div>
 
 function vExercise(){const ex=S.exercises[view.exerciseId];if(!ex||ex.deleted){view.exerciseId=null;return vExList()}
   const hist=historyFor(ex.id);let best=0,heavy=0;for(const hst of hist)for(const s of hst.sets){best=Math.max(best,e1rm(s));heavy=Math.max(heavy,num(s.w)||0)}
-  let h=`<input class="title" data-f="exname" data-id="${ex.id}" value="${esc(ex.name)}">
+  let h=`<input class="title" data-f="exname" data-id="${ex.id}" value="${esc(ex.name)}" style="margin-bottom:8px"><input data-f="excat" data-id="${ex.id}" value="${esc(ex.category||'')}" placeholder="Muscle group (e.g. Lats)" list="cats" style="margin-bottom:12px"><datalist id="cats">${[...new Set(liveEx().map(e=>e.category).filter(Boolean))].sort().map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
   <div class="stats"><div><b>${best?fmtNum(best):'–'}</b><span>est. 1RM</span></div><div><b>${heavy?fmtNum(heavy):'–'}</b><span>heaviest</span></div><div><b>${hist.length}</b><span>sessions</span></div></div>
   <div class="card"><h3>⚙︎ Machine settings</h3>${msEditor(ex)}</div><div class="month">History</div>`;
   if(!hist.length)h+=`<div class="empty">No sets logged yet.</div>`;
@@ -343,7 +344,7 @@ function sheetAddEx(target){sheetCtx={type:'addEx',target:target||'workout'};ope
 function renderExResults(q){const lu=lastUsedMap();const ql=q.trim().toLowerCase();
   const list=liveEx().filter(e=>e.name.toLowerCase().includes(ql)).sort((a,b)=>(lu[b.id]||'').localeCompare(lu[a.id]||'')||a.name.localeCompare(b.name));
   let h='';if(ql&&!list.some(e=>e.name.toLowerCase()===ql))h+=`<button class="pick" data-a="createEx" data-n="${esc(q.trim())}"><b style="color:var(--acc)">+ Create “${esc(q.trim())}”</b></button>`;
-  for(const e of list.slice(0,60)){const sum=settingsSummary(e);h+=`<button class="pick" data-a="pickEx" data-id="${e.id}"><b>${esc(e.name)}</b>${sum?`<div class="mut sm">⚙︎ ${esc(sum)}</div>`:''}</button>`}
+  for(const e of list.slice(0,80)){const sum=settingsSummary(e);const sub=[e.category,sum?'⚙︎ '+sum:''].filter(Boolean).join(' · ');h+=`<button class="pick" data-a="pickEx" data-id="${e.id}"><b>${esc(e.name)}</b>${sub?`<div class="mut sm">${esc(sub)}</div>`:''}</button>`}
   if(!h)h='<div class="mut sm" style="padding:14px 4px">Type a name to create your first exercise.</div>';
   $('#exResults').innerHTML=h}
 function sheetMachine(id){const ex=S.exercises[id];if(!ex)return;sheetCtx={type:'machine',id};
@@ -360,16 +361,18 @@ function parseCSV(text){text=text.replace(/^﻿/,'');const first=(text.split(/\r
     else if(c==='"')q=true;else if(c===d){row.push(f);f=''}else if(c==='\n'){row.push(f);rows.push(row);row=[];f=''}else if(c!=='\r')f+=c}
   if(f!==''||row.length){row.push(f);rows.push(row)}
   return rows.filter(r=>r.some(c=>c.trim()!=='')&&!/^sep=/i.test(r[0]||''))}
-const FIELDS=[['date','Date',1],['exercise','Exercise',1],['weight','Weight'],['reps','Reps'],['note','Set note'],['workout','Workout name'],['unit','Weight unit'],['sets','Sets (if one row = several sets)']];
+const FIELDS=[['date','Date / workout start',1],['exercise','Exercise',1],['weight','Weight'],['reps','Reps'],['note','Set note'],['workout','Workout name'],['category','Muscle group'],['duration','Duration (sec)'],['unit','Weight unit'],['sets','Sets (if one row = several sets)']];
 function guessMap(head){const L=head.map(h=>h.trim().toLowerCase());const used=new Set();
   const find=(...res)=>{for(const re of res){const i=L.findIndex((h,ix)=>!used.has(ix)&&re.test(h));if(i>=0){used.add(i);return i}}return -1};
   const m={};
   m.exercise=find(/^exercise( name)?$/,/exercise(?!.*note)/,/^(movement|lift)$/);
-  m.date=find(/^date$/,/date/,/^day$/,/^(time|start|start time|timestamp)$/);
+  m.date=find(/^date$/,/date/,/^day$/,/^(time|start|start time|timestamp)$/,/start/);
   m.reps=find(/^reps?$/,/^reps?\b/,/repetition/);
   m.weight=find(/^weight/,/weight|load/,/^(kg|lbs?)$/);
   m.note=find(/^(set )?notes?$/,/set ?note/,/^comments?$/);
-  m.workout=find(/^workout( name)?$/,/workout ?name|routine|^session|^title$/);
+  m.workout=find(/^workout( name)?$/,/workout ?name|routine|^session|^title$/,/^name$/);
+  m.category=find(/categor|muscle|body ?part/);
+  m.duration=find(/^duration|^seconds?$/);
   m.unit=find(/unit/);
   m.sets=find(/^sets$/,/set ?count|num.*sets/);
   if(m.exercise<0)m.exercise=find(/^name$/);
@@ -381,20 +384,24 @@ function parseDate(v,dmy){v=String(v??'').trim();if(!v)return null;let m=v.match
 function buildImport(){const m=imp.map;if(m.date<0||m.exercise<0)return {ok:false,err:'Pick which columns hold the Date and the Exercise.',workouts:[],setCount:0,skipped:0};
   let dmy=false;for(const row of imp.data){const mm=String(row[m.date]||'').trim().match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-]/);if(mm&&+mm[1]>12){dmy=true;break}}
   const wHead=m.weight>=0?String(imp.head[m.weight]||'').toLowerCase():'';
-  const groups=new Map();let setCount=0,skipped=0;
-  for(const row of imp.data){const date=parseDate(row[m.date],dmy);const exn=String(row[m.exercise]??'').trim();if(!date||!exn){skipped++;continue}
+  const groups=[],seen={};let prevKey=null,setCount=0,skipped=0;
+  for(const row of imp.data){const rawDate=String(row[m.date]??'').trim();const date=parseDate(rawDate,dmy);const exn=String(row[m.exercise]??'').trim();if(!date||!exn){skipped++;continue}
     let wRaw=m.weight>=0?String(row[m.weight]??'').trim():'',rRaw=m.reps>=0?String(row[m.reps]??'').trim():'';
     const x=wRaw.match(/^([\d.,]+)\s*(kg|lbs?)?\s*[x×]\s*(\d+)/i);if(x&&!rRaw){wRaw=x[1]+(x[2]||'');rRaw=x[3]}
-    let w=num(wRaw);const r=num(rRaw);const note=m.note>=0?String(row[m.note]??'').trim():'';
-    if(isNaN(w)&&isNaN(r)&&!note){skipped++;continue}
+    let w=num(wRaw);const r=num(rRaw);let note=m.note>=0?String(row[m.note]??'').trim():'';
+    const dur=m.duration>=0?num(row[m.duration]):NaN;if(dur>0)note=(note?note+' · ':'')+fmtNum(dur)+'s';
+    if(w===0&&isNaN(r))w=NaN;
     let u=imp.unitMode;if(u==='auto'){const src=(m.unit>=0?String(row[m.unit]||''):'')+' '+wRaw+' '+wHead;u=/kg|kilo/i.test(src)?'kg':/lb|pound/i.test(src)?'lb':S.unit}
     if(!isNaN(w)&&u!==S.unit)w=u==='kg'?w*2.20462:w/2.20462;if(!isNaN(w))w=Math.round(w*10)/10;
-    const wname=m.workout>=0?String(row[m.workout]??'').trim():'';const key=date+'|'+wname;
-    if(!groups.has(key))groups.set(key,{key,date,name:wname||'Workout',entries:[]});const g=groups.get(key);
-    let en=g.entries.find(e=>e.name.toLowerCase()===exn.toLowerCase());if(!en){en={name:exn,sets:[]};g.entries.push(en)}
-    let n=m.sets>=0?parseInt(row[m.sets],10):1;if(!(n>=1&&n<=20))n=1;
-    for(let k=0;k<n;k++){en.sets.push({w:isNaN(w)?'':String(w),r:isNaN(r)?'':String(Math.round(r)),note:k===0?note:'',done:true});setCount++}}
-  const workouts=[...groups.values()].sort((a,b)=>a.date.localeCompare(b.date));
+    const wname=m.workout>=0?String(row[m.workout]??'').trim():'';
+    // a new workout starts whenever the workout name or its start time changes from the row above
+    const sk=rawDate+'|'+wname;let g=groups[groups.length-1];
+    if(sk!==prevKey){const n=seen[sk]=(seen[sk]||0)+1;const t=Date.parse(rawDate.replace(' ','T'));
+      g={key:sk+(n>1?'#'+n:''),date,name:wname||'Workout',start:/\d:\d/.test(rawDate)&&!isNaN(t)?t:0,entries:[]};groups.push(g);prevKey=sk}
+    let en=g.entries.find(e=>e.name.toLowerCase()===exn.toLowerCase());if(!en){en={name:exn,category:m.category>=0?String(row[m.category]??'').trim():'',sets:[]};g.entries.push(en)}
+    let n=m.sets>=0?parseInt(row[m.sets],10):1;if(!(n>=1&&n<=20))n=1;const filled=!isNaN(w)||!isNaN(r);
+    for(let k=0;k<n;k++){en.sets.push({w:isNaN(w)?'':String(w),r:isNaN(r)?'':String(Math.round(r)),note:k===0?note:'',done:filled});setCount++}}
+  const workouts=groups.sort((a,b)=>a.date.localeCompare(b.date)||(a.start-b.start));
   return {ok:workouts.length>0,err:workouts.length?'':'No sets found with these columns. Try different column choices.',workouts,setCount,skipped}}
 function previewHtml(r){if(!r.ok)return `<div class="err">${esc(r.err)}</div>`;
   const f=r.workouts[0],l=r.workouts[r.workouts.length-1],ex=new Set();r.workouts.forEach(w=>w.entries.forEach(e=>ex.add(e.name.toLowerCase())));
@@ -411,8 +418,9 @@ function startImport(text){const rows=parseCSV(text);if(rows.length<2){toast('Th
   const head=rows[0];imp={head,data:rows.slice(1),map:guessMap(head),unitMode:'auto'};renderImport()}
 function doImport(){const r=buildImport();if(!r.ok)return;const byName={};for(const e of liveEx())byName[e.name.toLowerCase()]=e.id;
   for(const g of r.workouts){const id='imp'+hash(g.key);
-    const entries=g.entries.map(en=>{let exId=byName[en.name.toLowerCase()];if(!exId){exId=newId();S.exercises[exId]={id:exId,name:en.name,settings:[],notes:'',createdAt:now(),updatedAt:now()};byName[en.name.toLowerCase()]=exId;markDirty('meta')}return {exId,sets:en.sets}});
-    const prev=S.workouts[id];const w={id,date:g.date,name:g.name,entries,notes:prev?.notes||'',createdAt:prev?.createdAt||Date.parse(g.date+'T12:00:00')||now(),updatedAt:now(),imported:true};
+    const entries=g.entries.map(en=>{let exId=byName[en.name.toLowerCase()];if(!exId){exId=newId();S.exercises[exId]={id:exId,name:en.name,category:en.category||'',settings:[],notes:'',createdAt:now(),updatedAt:now()};byName[en.name.toLowerCase()]=exId;markDirty('meta')}
+      else if(en.category&&!S.exercises[exId].category){S.exercises[exId].category=en.category;touchEx(S.exercises[exId])}return {exId,sets:en.sets}});
+    const prev=S.workouts[id];const w={id,date:g.date,name:g.name,entries,notes:prev?.notes||'',createdAt:g.start||prev?.createdAt||Date.parse(g.date+'T12:00:00')||now(),updatedAt:now(),imported:true};
     if(prev&&monthOf(prev)!==monthOf(w))markDirty(monthOf(prev));S.workouts[id]=w;markDirty(monthOf(w))}
   saveLocal();imp=null;view.tab='log';view.workoutId=null;closeSheet();toast(`Imported ${r.workouts.length} workouts and ${r.setCount} sets`)}
 
@@ -496,7 +504,8 @@ document.addEventListener('click',e=>{if(e.target.id==='sheetWrap'){closeSheet()
 document.addEventListener('input',e=>{const t=e.target,f=t.dataset.f;if(t.tagName==='TEXTAREA')autoGrow(t);
   if(t.id==='exq'){renderExResults(t.value);return}
   if(!f)return;
-  if(f==='exlq'){const q=t.value.trim().toLowerCase();document.querySelectorAll('.exrow').forEach(el=>el.style.display=el.dataset.name.includes(q)?'':'none');return}
+  if(f==='exlq'){const q=t.value.trim().toLowerCase();document.querySelectorAll('.exrow').forEach(el=>el.style.display=el.dataset.name.includes(q)?'':'none');
+    document.querySelectorAll('[data-cat]').forEach(hd=>{let n=hd.nextElementSibling,any=false;while(n&&n.classList.contains('exrow')){if(n.style.display!=='none')any=true;n=n.nextElementSibling}hd.style.display=any?'':'none'});return}
   if(f==='impmap'){imp.map[t.dataset.k]=+t.value;renderImport();return}
   if(f==='impunit'){imp.unitMode=t.value;renderImport();return}
   if(f==='rtname'||f==='rttarget'){const r=S.routines[view.routineId];if(!r)return;if(f==='rtname')r.name=t.value;else r.exercises[+t.dataset.i].target=t.value.trim();touchR(r);return}
@@ -508,6 +517,7 @@ document.addEventListener('input',e=>{const t=e.target,f=t.dataset.f;if(t.tagNam
   const ex=S.exercises[t.dataset.id];if(!ex)return;
   if(f==='exname'){if(!t.value.trim())return;ex.name=t.value.trim()}
   else if(f==='exnotes')ex.notes=t.value;
+  else if(f==='excat')ex.category=t.value.trim();
   else if(f==='msk'||f==='msv'){const s=ex.settings[+t.dataset.k];if(!s)return;s[f==='msk'?'k':'v']=t.value;
     document.querySelectorAll(`[data-ms="${ex.id}"] input[data-f="${f}"][data-k="${t.dataset.k}"]`).forEach(o=>{if(o!==t)o.value=t.value})}
   touchEx(ex)});
