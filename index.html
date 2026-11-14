@@ -142,7 +142,7 @@ ol li{margin-bottom:6px}
 <script>
 "use strict";
 /* ---------- helpers ---------- */
-const APP_VERSION=7;
+const APP_VERSION=8;
 const LS='liftlog.v1', LSV='liftlog.view';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -183,11 +183,19 @@ const exName=id=>S.exercises[id]?.name||'Unknown exercise';
 const sortW=(a,b)=>b.date.localeCompare(a.date)||(b.createdAt||0)-(a.createdAt||0);
 function vol(w){let v=0;for(const en of w.entries)for(const s of en.sets){if(s.warmup)continue;const a=num(s.w),b=num(s.r);if(a&&b)v+=a*b}return v}
 function fmtSet(s){return (s.warmup?'W ':'')+(s.w!==''?s.w:'BW')+' × '+(s.r!==''?s.r:'?')}
-function lastFor(exId,cur){let best=null;
-  for(const w of liveW()){if(cur&&w.id===cur.id)continue;if(cur&&w.date>cur.date)continue;
+const normName=n=>String(n||'').trim().toLowerCase();
+// Which routine a workout belongs to: its routine id, plus the routine's current name and the workout's own name
+function routineKeys(w){if(!w)return null;const k=new Set();if(w.routineId){k.add('id:'+w.routineId);const r=S.routines[w.routineId];if(r&&!r.deleted&&normName(r.name))k.add('n:'+normName(r.name))}
+  const n=normName(w.name);if(n&&n!=='workout')k.add('n:'+n);return k.size?k:null}
+function sameRoutine(keys,w){if(!keys)return false;if(w.routineId&&keys.has('id:'+w.routineId))return true;const n=normName(w.name);if(n&&keys.has('n:'+n))return true;
+  if(w.routineId){const r=S.routines[w.routineId];if(r&&keys.has('n:'+normName(r.name)))return true}return false}
+// Last time this exercise was done, preferring the same routine; falls back to any workout
+function lastFor(exId,cur){const keys=routineKeys(cur);let same=null,any=null;
+  for(const w of liveW()){if(cur&&w.id===cur.id)continue;if(cur&&cur.date&&w.date>cur.date)continue;
     const en=w.entries.find(e=>e.exId===exId);if(!en)continue;const sets=en.sets.filter(hasData);if(!sets.length)continue;
-    if(!best||w.date>best.date||(w.date===best.date&&(w.createdAt||0)>(best.createdAt||0)))best={date:w.date,createdAt:w.createdAt,sets};}
-  return best}
+    const c={date:w.date,createdAt:w.createdAt,sets,name:w.name};const newer=(a,b)=>!a||b.date>a.date||(b.date===a.date&&(b.createdAt||0)>(a.createdAt||0));
+    if(newer(any,c))any=c;if(sameRoutine(keys,w)&&newer(same,c))same=c}
+  if(same){same.scoped=true;return same}if(any)any.scoped=false;return any}
 function historyFor(exId){const out=[];for(const w of liveW().sort(sortW)){const en=w.entries.find(e=>e.exId===exId);if(!en)continue;const sets=en.sets.filter(s=>hasData(s)||(s.media&&s.media.length));if(sets.length)out.push({w,sets})}return out}
 function lastUsedMap(){const m={};for(const w of liveW())for(const en of w.entries)if(!m[en.exId]||w.date>m[en.exId])m[en.exId]=w.date;return m}
 function settingsSummary(ex){return (ex?.settings||[]).filter(x=>x.k||x.v).map(x=>(x.k?x.k+' ':'')+x.v).join(' · ')}
@@ -339,7 +347,7 @@ function vWorkout(){const w=S.workouts[view.workoutId];if(!w||w.deleted){view.wo
     <button class="machine ${sum?'':'empty'}" data-a="machine" data-id="${en.exId}">⚙︎ ${sum?esc(sum):'Add machine settings'}</button>
     ${ex&&ex.notes?`<div class="cue">${esc(ex.notes)}</div>`:''}
     ${en.target?`<div class="target">Target: ${esc(en.target)} reps</div>`:''}
-    ${last?`<div class="last">Last time (${shortDate(last.date)}): ${last.sets.map(s=>esc(fmtSet(s))).join(' · ')}</div>`:''}
+    ${last?`<div class="last">${last.scoped||!routineKeys(w)?`Last time (${shortDate(last.date)})`:`Last time, in ${esc(last.name||'another workout')} (${shortDate(last.date)})`}: ${last.sets.map(s=>esc(fmtSet(s))).join(' · ')}</div>`:''}
     <div class="set head"><span title="Tap a set number to mark it as a warm-up">SET</span><span>${S.unit.toUpperCase()}</span><span>REPS</span><span>NOTE</span><span></span></div>`;
     let wn=0;en.sets.forEach((s,j)=>{const ls=last&&(last.sets[j]||last.sets[last.sets.length-1]);const key=i+'-'+j;if(!s.warmup)wn++;
       h+=`<div class="set ${s.done?'done':''} ${s.warmup?'warm':''}"><button class="n ${s.warmup?'wu':''}" data-a="toggleWarm" data-i="${i}" data-j="${j}" aria-label="${s.warmup?'Warm-up set, tap to make it a working set':'Set '+wn+', tap to mark as warm-up'}">${s.warmup?'W':wn}</button>
@@ -551,7 +559,7 @@ const ACT={
   newRoutine(){const r={id:newId(),name:'New routine',exercises:[],createdAt:now()};S.routines[r.id]=r;touchR(r);go({routineId:r.id});const t=document.querySelector('input[data-f="rtname"]');if(t){t.focus();t.select()}},
   openR(d){go({routineId:d.id})},
   startR(d){const r=S.routines[d.id];if(!r)return;if(!r.exercises.length){toast('Add exercises to this routine first');go({tab:'rt',routineId:r.id});return}
-    newWorkout(r.exercises.map(e=>{const warm=e.warm||0;const last=warm?null:lastFor(e.exId,null);
+    newWorkout(r.exercises.map(e=>{const warm=e.warm||0;const last=warm?null:lastFor(e.exId,{id:null,date:today(),name:r.name,routineId:r.id});
       return {exId:e.exId,target:e.target||'',sets:[...Array.from({length:warm},()=>Object.assign(blankSet(),{warmup:true})),...Array.from({length:Math.max(1,e.sets||3)},(_,j)=>Object.assign(blankSet(),last&&last.sets[j]&&last.sets[j].warmup?{warmup:true}:{}))]}}),r.name,r.id)},
   rtMove(d){const r=S.routines[view.routineId],i=+d.i,k=i+ +d.dir;[r.exercises[i],r.exercises[k]]=[r.exercises[k],r.exercises[i]];touchR(r);render()},
   rtRemove(d){const r=S.routines[view.routineId];r.exercises.splice(+d.i,1);touchR(r);render()},

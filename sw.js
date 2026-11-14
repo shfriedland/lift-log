@@ -1,4 +1,4 @@
-const C='liftlog-v7',F=['./','index.html','manifest.json','icon-180.png','icon-192.png','icon-512.png'];
+const C='liftlog-v8',F=['./','index.html','manifest.json','icon-180.png','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>Promise.all(F.map(f=>fetch(f,{cache:'no-cache'}).then(r=>c.put(f,r)))))) ;self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 // Always ask the server for the latest page (skipping the browser's 10-minute cache); fall back to the saved copy when offline.
