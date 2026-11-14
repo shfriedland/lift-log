@@ -58,7 +58,7 @@ input.title{font-size:20px;font-weight:700;margin-bottom:12px}
 .machine.empty{background:var(--card2);color:var(--mut);font-weight:500}
 .cue{font-size:14px;color:#c9ced6;background:var(--card2);border-radius:10px;padding:8px 12px;margin:0 0 6px;white-space:pre-wrap}
 .last{font-size:13px;color:var(--mut);margin:6px 2px 8px}
-.set{display:grid;grid-template-columns:28px 1fr 1fr 40px 44px;gap:8px;align-items:center;margin:6px 0}
+.set{display:grid;grid-template-columns:34px 1fr 1fr 44px;gap:8px;align-items:center;margin:6px 0}
 .set.head{font-size:11px;font-weight:700;color:var(--mut);letter-spacing:.06em;margin:4px 0 0}
 .set.head span{text-align:center}
 .set .n{text-align:center;color:var(--mut);font-weight:700;font-size:14px;height:40px;border-radius:10px}
@@ -68,8 +68,6 @@ input.title{font-size:20px;font-weight:700;margin-bottom:12px}
 .set input{text-align:center;padding:10px 4px;font-weight:600;font-size:17px}
 .set.done input{background:var(--doneBg)}
 .note.has{color:var(--acc)}
-.chk{height:40px;border-radius:10px;background:var(--card2);color:#5d6470;font-weight:800;font-size:18px}
-.set.done .chk{background:var(--acc);color:var(--accT)}
 .noteRow{margin:-2px 0 8px 36px;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 .noteRow .link{padding:4px 2px;font-size:13px}
 .wnotes{margin:4px 0 10px;min-height:70px}
@@ -142,7 +140,7 @@ ol li{margin-bottom:6px}
 <script>
 "use strict";
 /* ---------- helpers ---------- */
-const APP_VERSION=8;
+const APP_VERSION=9;
 const LS='liftlog.v1', LSV='liftlog.view';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -348,13 +346,13 @@ function vWorkout(){const w=S.workouts[view.workoutId];if(!w||w.deleted){view.wo
     ${ex&&ex.notes?`<div class="cue">${esc(ex.notes)}</div>`:''}
     ${en.target?`<div class="target">Target: ${esc(en.target)} reps</div>`:''}
     ${last?`<div class="last">${last.scoped||!routineKeys(w)?`Last time (${shortDate(last.date)})`:`Last time, in ${esc(last.name||'another workout')} (${shortDate(last.date)})`}: ${last.sets.map(s=>esc(fmtSet(s))).join(' · ')}</div>`:''}
-    <div class="set head"><span title="Tap a set number to mark it as a warm-up">SET</span><span>${S.unit.toUpperCase()}</span><span>REPS</span><span>NOTE</span><span></span></div>`;
+    <div class="set head"><span title="Tap a set number to mark it as a warm-up">SET</span><span>${S.unit.toUpperCase()}</span><span>REPS</span><span>NOTE</span></div>`;
     let wn=0;en.sets.forEach((s,j)=>{const ls=last&&(last.sets[j]||last.sets[last.sets.length-1]);const key=i+'-'+j;if(!s.warmup)wn++;
-      h+=`<div class="set ${s.done?'done':''} ${s.warmup?'warm':''}"><button class="n ${s.warmup?'wu':''}" data-a="toggleWarm" data-i="${i}" data-j="${j}" aria-label="${s.warmup?'Warm-up set, tap to make it a working set':'Set '+wn+', tap to mark as warm-up'}">${s.warmup?'W':wn}</button>
+      h+=`<div class="set ${s.w!==''&&s.r!==''?'done':''} ${s.warmup?'warm':''}"><button class="n ${s.warmup?'wu':''}" data-a="toggleWarm" data-i="${i}" data-j="${j}" aria-label="${s.warmup?'Warm-up set, tap to make it a working set':'Set '+wn+', tap to mark as warm-up'}">${s.warmup?'W':wn}</button>
       <input inputmode="decimal" data-f="w" data-i="${i}" data-j="${j}" value="${esc(s.w)}" placeholder="${ls?esc(ls.w):''}">
       <input inputmode="numeric" data-f="r" data-i="${i}" data-j="${j}" value="${esc(s.r)}" placeholder="${ls?esc(ls.r):esc(tgtLow(en.target))}">
       <button class="icon note ${s.note||(s.media&&s.media.length)?'has':''}" data-a="note" data-i="${i}" data-j="${j}" aria-label="Set note">✎</button>
-      <button class="chk" data-a="done" data-i="${i}" data-j="${j}" aria-label="Mark set done">✓</button></div>`;
+</div>`;
       if(openNotes.has(key)||s.note||(s.media&&s.media.length))h+=`<div class="noteRow"><textarea rows="1" data-f="note" data-i="${i}" data-j="${j}" placeholder="Note for ${s.warmup?'this warm-up':'set '+wn}: form, RPE, how it felt…">${esc(s.note)}</textarea>
         ${s.media&&s.media.length?`<div class="thumbs">${thumbsHtml(s.media)}</div>`:''}
         <div class="tools"><label class="addMedia">🎥 Add video<input type="file" accept="video/*,image/*" data-media="set" data-i="${i}" data-j="${j}" hidden></label><button class="link red" data-a="delSet" data-i="${i}" data-j="${j}">Delete set</button></div></div>`});
@@ -579,9 +577,6 @@ const ACT={
   exHist(d){go({tab:'ex',exerciseId:d.id})},
   toggleWarm(d){const w=curW(),s=w.entries[+d.i].sets[+d.j];s.warmup=!s.warmup;if(!s.warmup)delete s.warmup;touchW(w);render()},
   addSet(d){const w=curW(),en=w.entries[+d.i],p=en.sets[en.sets.length-1];en.sets.push(p?{w:p.w,r:p.r,note:'',done:false}:blankSet());touchW(w);render()},
-  done(d){const w=curW(),i=+d.i,j=+d.j,s=w.entries[i].sets[j];s.done=!s.done;
-    if(s.done&&(s.w===''||s.r==='')){const prev=w.entries[i].sets[j-1];const last=lastFor(w.entries[i].exId,w);const ls=last&&last.sets[j];for(const k of ['w','r'])if(s[k]==='')s[k]=(prev&&prev[k]!=='')?prev[k]:(ls?ls[k]:(k==='r'?tgtLow(w.entries[i].target):''))}
-    touchW(w);render()},
   note(d){const key=d.i+'-'+d.j;const s=curW().entries[+d.i].sets[+d.j];if(openNotes.has(key)&&!s.note)openNotes.delete(key);else openNotes.add(key);render();
     const t=document.querySelector(`textarea[data-f="note"][data-i="${d.i}"][data-j="${d.j}"]`);if(t)t.focus()},
   delSet(d){const w=curW();w.entries[+d.i].sets.splice(+d.j,1);openNotes.clear();touchW(w);render()},
@@ -634,6 +629,7 @@ document.addEventListener('input',e=>{const t=e.target,f=t.dataset.f;if(t.tagNam
   if(['wname','wdate','wnotes','w','r','note'].includes(f)){const w=curW();if(!w)return;const pm=monthOf(w);
     if(f==='wname')w.name=t.value;else if(f==='wdate'){if(!t.value)return;w.date=t.value}else if(f==='wnotes')w.notes=t.value;
     else{const s=w.entries[+t.dataset.i].sets[+t.dataset.j];s[f]=t.value;
+      if(f==='w'||f==='r'){s.done=s.w!==''&&s.r!=='';const row=t.closest('.set');if(row)row.classList.toggle('done',s.done)}
       if(f==='note'){const btn=document.querySelector(`.note[data-i="${t.dataset.i}"][data-j="${t.dataset.j}"]`);if(btn)btn.classList.toggle('has',!!t.value)}}
     touchW(w,pm);return}
   const ex=S.exercises[t.dataset.id];if(!ex)return;
