@@ -1,14 +1,19 @@
 :root {
-  --bg: #0e1013;
-  --card: #171a1f;
-  --card2: #21252c;
-  --line: #2b3039;
+  --bg: #0b0d11;
+  --card: rgba(255, 255, 255, .045);
+  --card2: rgba(255, 255, 255, .08);
+  --line: rgba(255, 255, 255, .09);
   --text: #eef0f3;
   --mut: #8b93a1;
   --acc: #c6f432;
   --accT: #11140a;
   --red: #ff6b6b;
-  --doneBg: rgba(198, 244, 50, .13)
+  --doneBg: rgba(198, 244, 50, .13);
+  /* Glass material: used by everything that floats over the content (top bar buttons, tab bar, sheets, toast). */
+  --glass: rgba(30, 34, 42, .55);
+  --glass-brd: rgba(255, 255, 255, .13);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .18);
+  --glass-blur: blur(24px) saturate(180%);
 }
 
 * {
@@ -19,13 +24,12 @@
 html,
 body {
   margin: 0;
-  background: var(--bg);
   color: var(--text);
-  font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, Segoe UI, Roboto, sans-serif
+  font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, Segoe UI, Roboto, sans-serif;
 }
 
 body {
-  padding: 0 0 calc(76px + env(safe-area-inset-bottom))
+  padding: 0 0 calc(92px + env(safe-area-inset-bottom));
 }
 
 button {
@@ -45,10 +49,10 @@ select {
   color: var(--text);
   background: var(--card2);
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 10px 12px;
   width: 100%;
-  outline: none
+  outline: none;
 }
 
 input:focus,
@@ -71,22 +75,19 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 5;
-  background: rgba(14, 16, 19, .92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   gap: 10px;
   padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
-  border-bottom: 1px solid var(--line);
-  min-height: 56px
+  min-height: 58px;
 }
 
 #top h1 {
-  font-size: 20px;
+  font-size: 22px;
+  font-weight: 700;
   margin: 0;
   flex: 1;
-  letter-spacing: -.01em
+  letter-spacing: -.02em;
 }
 
 #top .back {
@@ -98,10 +99,17 @@ textarea {
 }
 
 #top .backIcon {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
   color: var(--acc);
-  font-size: 30px;
+  font-size: 28px;
   line-height: 1;
-  padding: 0 6px 4px 0
+  padding: 0 2px 4px 0;
 }
 
 #top h1 {
@@ -159,29 +167,37 @@ main {
 
 #tabs {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 12px;
+  right: 12px;
+  bottom: max(10px, calc(env(safe-area-inset-bottom) - 10px));
   z-index: 6;
   display: flex;
-  background: rgba(18, 20, 24, .96);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid var(--line);
-  padding: 6px 6px calc(6px + env(safe-area-inset-bottom))
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 5px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-brd);
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-hi), 0 12px 32px rgba(0, 0, 0, .5);
 }
 
 #tabs button {
+  position: relative;
+  z-index: 1;
   flex: 1;
   min-width: 0;
-  padding: 8px 0;
+  padding: 7px 0 6px;
+  border-radius: 999px;
   color: var(--mut);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px
+  gap: 2px;
+  transition: color .2s ease, transform .15s ease;
 }
 
 #tabs button svg {
@@ -198,10 +214,11 @@ main {
   width: 100%;
   text-align: left;
   background: var(--card);
-  border-radius: 16px;
+  border-radius: 22px;
   padding: 14px;
   margin: 0 0 12px;
-  border: 1px solid var(--line)
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
 }
 
 .row {
@@ -231,13 +248,14 @@ main {
 .primary {
   display: block;
   width: 100%;
-  background: var(--acc);
+  background: linear-gradient(to bottom, #d3f95a, var(--acc));
   color: var(--accT);
   font-weight: 700;
-  border-radius: 12px;
+  border-radius: 999px;
   padding: 14px;
   margin: 6px 0 12px;
-  text-align: center
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 6px 22px rgba(198, 244, 50, .16);
 }
 
 .primary[disabled] {
@@ -253,11 +271,12 @@ main {
   display: block;
   width: 100%;
   background: var(--card2);
-  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, .06);
+  border-radius: 16px;
   padding: 12px;
   margin: 8px 0;
   font-weight: 600;
-  text-align: center
+  text-align: center;
 }
 
 .ghost.left {
@@ -461,14 +480,14 @@ input.title {
 }
 
 #top .home {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text);
-  border-radius: 10px;
-  background: var(--card2)
+  border-radius: 50%;
 }
 
 #top .home svg {
@@ -478,8 +497,6 @@ input.title {
 
 #top .trash {
   color: var(--red);
-  background: rgba(255, 107, 107, .08);
-  opacity: .75
 }
 
 #top .trash svg {
@@ -523,9 +540,9 @@ input.title {
 .stats div {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 12px 6px;
-  text-align: center
+  text-align: center;
 }
 
 .stats b {
@@ -569,7 +586,7 @@ h3 {
   display: flex;
   align-items: center;
   background: var(--card2);
-  border-radius: 10px
+  border-radius: 999px;
 }
 
 .stepper button {
@@ -640,12 +657,13 @@ h3 {
   align-items: center;
   gap: 6px;
   background: var(--card2);
-  border-radius: 10px;
-  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, .06);
+  border-radius: 999px;
+  padding: 8px 14px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  color: #c9ced6
+  color: #c9ced6;
 }
 
 .noteRow .tools {
@@ -782,17 +800,17 @@ h3 {
 .seg {
   display: flex;
   background: var(--card2);
-  border-radius: 10px;
+  border-radius: 999px;
   padding: 3px;
-  margin-bottom: 8px
+  margin-bottom: 8px;
 }
 
 .seg button {
   flex: 1;
   padding: 9px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-weight: 700;
-  color: var(--mut)
+  color: var(--mut);
 }
 
 .seg button.on {
@@ -819,10 +837,11 @@ ol li {
   position: fixed;
   inset: 0;
   z-index: 20;
-  background: rgba(0, 0, 0, .55);
+  background: rgba(0, 0, 0, .45);
   display: none;
   align-items: flex-end;
-  justify-content: center
+  justify-content: center;
+  padding: 0 8px max(8px, env(safe-area-inset-bottom));
 }
 
 #sheetWrap.on {
@@ -830,15 +849,19 @@ ol li {
 }
 
 #sheet {
-  background: #15181d;
+  position: relative;
   width: 100%;
   max-width: 640px;
-  max-height: 88vh;
+  max-height: 86vh;
   overflow: auto;
-  border-radius: 20px 20px 0 0;
-  padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--line);
-  -webkit-overflow-scrolling: touch
+  padding: 28px 16px 18px;
+  border-radius: 30px;
+  border: 1px solid var(--glass-brd);
+  background: rgba(24, 27, 34, .72);
+  backdrop-filter: blur(30px) saturate(170%);
+  -webkit-backdrop-filter: blur(30px) saturate(170%);
+  box-shadow: var(--glass-hi), 0 -10px 40px rgba(0, 0, 0, .4);
+  -webkit-overflow-scrolling: touch;
 }
 
 #sheet h2 {
@@ -875,10 +898,10 @@ ol li {
 .preview {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 12px;
   margin: 14px 0;
-  font-size: 14px
+  font-size: 14px;
 }
 
 .preview .err {
@@ -888,19 +911,23 @@ ol li {
 #toast {
   position: fixed;
   left: 50%;
-  bottom: calc(90px + env(safe-area-inset-bottom));
+  bottom: calc(104px + env(safe-area-inset-bottom));
   transform: translateX(-50%) translateY(20px);
-  background: #2a2f37;
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-brd);
+  box-shadow: var(--glass-hi), 0 8px 24px rgba(0, 0, 0, .4);
   color: var(--text);
-  padding: 10px 16px;
-  border-radius: 12px;
+  padding: 10px 18px;
+  border-radius: 999px;
   font-size: 14px;
   opacity: 0;
   pointer-events: none;
   transition: .25s;
   z-index: 30;
   max-width: 90vw;
-  text-align: center
+  text-align: center;
 }
 
 #toast.on {
@@ -1031,91 +1058,204 @@ ol li {
   padding: 8px 2px 6px
 }
 
-/* ---------- page transitions (View Transitions API; see withTransition in js/actions.js) ---------- */
-#main {
-  view-transition-name: page;
+/* ---------- glass look ---------- */
+/* Glass (blurred, translucent, with a bright top edge) is only for things that float over the content.
+   Content cards stay plain so numbers are easy to read and scrolling stays smooth. */
+
+/* Soft colored glow behind everything, so the glass has something to blur. */
+html {
   background: var(--bg);
 }
 
-#top {
-  view-transition-name: topbar;
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 38% at 10% 0%, rgba(198, 244, 50, .13), transparent 70%),
+    radial-gradient(60% 42% at 105% 48%, rgba(56, 189, 248, .11), transparent 70%),
+    radial-gradient(70% 40% at 0% 100%, rgba(45, 212, 191, .11), transparent 70%);
 }
 
-#tabs {
-  view-transition-name: tabbar;
+/* Top bar: no solid strip. Content blurs and fades out as it scrolls under it. */
+#top::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 -16px 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(11, 13, 17, .96) 50%, rgba(11, 13, 17, .7) 78%, rgba(11, 13, 17, 0));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent);
+  mask-image: linear-gradient(to bottom, #000 78%, transparent);
 }
 
-/* The rest of the page doesn't move. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
+/* Same idea at the bottom: content fades out behind the floating tab bar. */
+body::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(96px + env(safe-area-inset-bottom));
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(11, 13, 17, .95) 25%, rgba(11, 13, 17, 0));
 }
 
-::view-transition-group(*) {
-  animation-duration: .25s;
+/* Round glass buttons in the top bar. */
+#top .home,
+#top .backIcon {
+  background: var(--glass);
+  border: 1px solid var(--glass-brd);
+  box-shadow: var(--glass-hi), 0 4px 14px rgba(0, 0, 0, .3);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
-/* Top bar title swaps with a short crossfade so the two titles don't overlap for long. */
-::view-transition-old(topbar),
-::view-transition-new(topbar) {
-  animation-duration: .12s;
+#top .trash {
+  background: rgba(255, 107, 107, .1);
+  border-color: rgba(255, 107, 107, .22);
 }
 
-::view-transition-old(page),
-::view-transition-new(page) {
-  animation-duration: .25s;
-  animation-timing-function: cubic-bezier(.2, .8, .2, 1);
-  animation-fill-mode: both;
+/* Tab bar highlight: a brighter lens that slides to the current tab. */
+#tabs button.on {
+  background: rgba(255, 255, 255, .1);
 }
 
-/* Opening something: new page slides in from the right over the old one. */
-html[data-nav="forward"]::view-transition-old(page) {
-  animation-name: nav-out-left;
+@supports selector(:has(a)) {
+  #tabs button.on {
+    background: none;
+  }
+
+  #tabs::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    bottom: 5px;
+    left: 5px;
+    width: calc((100% - 10px) / 4);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .11);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 0 0 1px rgba(255, 255, 255, .05);
+    transition: transform .42s cubic-bezier(.3, 1.35, .5, 1);
+  }
+
+  #tabs:has(button:nth-of-type(2).on)::before {
+    transform: translateX(100%);
+  }
+
+  #tabs:has(button:nth-of-type(3).on)::before {
+    transform: translateX(200%);
+  }
+
+  #tabs:has(button:nth-of-type(4).on)::before {
+    transform: translateX(300%);
+  }
 }
 
-html[data-nav="forward"]::view-transition-new(page) {
-  animation-name: nav-in-right;
+/* Sheets: grabber handle, slide up, and fields that sit lightly on the glass. */
+#sheet::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 36px;
+  height: 5px;
+  margin-left: -18px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .26);
 }
 
-/* Going back: current page slides out to the right, revealing the one underneath. */
-html[data-nav="back"]::view-transition-old(page) {
-  animation-name: nav-out-right;
+#sheetWrap.on {
+  animation: sheet-dim .25s ease;
+}
+
+#sheetWrap.on #sheet {
+  animation: sheet-up .34s cubic-bezier(.2, .9, .3, 1.08);
+}
+
+@keyframes sheet-dim {
+  from {
+    background: rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(60%);
+    opacity: 0;
+  }
+}
+
+/* Buttons give a little when pressed. */
+.primary,
+.ghost,
+.addMedia,
+#top .home,
+#top .backIcon,
+button.card,
+.seg button {
+  transition: transform .15s ease, filter .15s ease;
+}
+
+.primary:active,
+.ghost:active,
+.addMedia:active,
+#top .home:active,
+#top .backIcon:active,
+#tabs button:active {
+  transform: scale(.96);
+}
+
+button.card:active {
+  transform: scale(.985);
+  filter: brightness(1.15);
+}
+
+/* iOS "Reduce Motion": no slides, springs or fades. */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---------- page transitions (see withTransition in js/actions.js) ---------- */
+/* Switching tabs: the new page fades in. */
+#main.fadeIn {
+  animation: page-fade .22s ease;
+}
+
+@keyframes page-fade {
+  from {
+    opacity: 0;
+    transform: scale(.985);
+  }
+}
+
+/* Opening / going back: a copy of the old page slides away while the new one slides in. */
+html {
+  overflow-x: clip;
+}
+
+.pageGhost {
+  position: fixed;
+  margin: 0;
+  pointer-events: none;
+}
+
+.pageGhost.pageCover {
   z-index: 1;
 }
 
-html[data-nav="back"]::view-transition-new(page) {
-  animation-name: nav-in-left;
-}
-
-/* Switching tabs: quick crossfade. */
-html[data-nav="fade"]::view-transition-old(page),
-html[data-nav="fade"]::view-transition-new(page) {
-  animation-duration: .18s;
-  animation-timing-function: ease;
-}
-
-@keyframes nav-in-right {
-  from {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes nav-out-left {
-  to {
-    transform: translateX(-25%);
-    opacity: 0;
-  }
-}
-
-@keyframes nav-out-right {
-  to {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes nav-in-left {
-  from {
-    transform: translateX(-25%);
-    opacity: 0;
-  }
+.pageCover {
+  background: var(--bg);
+  min-height: 100vh;
 }

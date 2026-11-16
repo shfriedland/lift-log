@@ -1,7 +1,7 @@
 // Helpers, app state, and the data model (workouts, exercises, routines, history lookups).
 "use strict";
 
-const APP_VERSION = 21; // keep in step with the cache name in sw.js
+const APP_VERSION = 22; // keep in step with the cache name in sw.js
 const LS = 'liftlog.v1',
   LSV = 'liftlog.view';
 const $ = s => document.querySelector(s);

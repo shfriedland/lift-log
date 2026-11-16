@@ -25,14 +25,61 @@ function navDirection(from, to) {
 
 const reduceMotion = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
 
-// Run a page change, animated with the View Transitions API when the browser has it.
+// Run a page change with its animation.
+// Tab switches fade the new page in. Opening and going back slide: the old page is kept for a moment as a
+// lifeless copy (.pageGhost) and animated out while the real #main animates in. The top bar and tab bar are
+// untouched, so their glass stays live while the pages move underneath.
 function withTransition(dir, update) {
-  if (!dir || !document.startViewTransition || (reduceMotion && reduceMotion.matches)) return update();
-  const root = document.documentElement;
-  root.dataset.nav = dir;
-  const t = document.startViewTransition(update);
-  t.finished.finally(() => {
-    if (root.dataset.nav === dir) delete root.dataset.nav
+  const main = $('#main');
+  if (!dir || !main.animate || (reduceMotion && reduceMotion.matches)) return update();
+  if (dir === 'fade') {
+    update();
+    main.classList.remove('fadeIn');
+    void main.offsetWidth; // restart the animation if it was already running
+    main.classList.add('fadeIn');
+    return
+  }
+  document.querySelectorAll('.pageGhost').forEach(g => g.remove());
+  const r = main.getBoundingClientRect();
+  const ghost = main.cloneNode(true);
+  ghost.removeAttribute('id');
+  ghost.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
+  ghost.className = 'pageGhost';
+  ghost.setAttribute('aria-hidden', 'true');
+  Object.assign(ghost.style, {
+    top: r.top + 'px',
+    left: r.left + 'px',
+    width: r.width + 'px'
+  });
+  main.before(ghost);
+  update();
+
+  const opts = {
+    duration: 300,
+    easing: 'cubic-bezier(.2, .8, .2, 1)',
+    fill: 'forwards'
+  };
+  const offRight = {
+      transform: 'translateX(100%)'
+    },
+    inPlace = {
+      transform: 'none',
+      opacity: 1
+    },
+    tuckedLeft = {
+      transform: 'translateX(-25%)',
+      opacity: 0
+    };
+  // The page on top gets a solid backdrop (.pageCover) so the one underneath doesn't show through it.
+  const top = dir === 'forward' ? main : ghost;
+  top.classList.add('pageCover');
+  let anims;
+  if (dir === 'forward') anims = [main.animate([offRight, inPlace], opts), ghost.animate([inPlace, tuckedLeft], opts)];
+  else anims = [main.animate([tuckedLeft, inPlace], opts), ghost.animate([inPlace, offRight], opts)];
+  Promise.all(anims.map(a => a.finished)).catch(() => {}).then(() => {
+    ghost.remove();
+    main.classList.remove('pageCover');
+    anims[0].cancel()
   })
 }
 
