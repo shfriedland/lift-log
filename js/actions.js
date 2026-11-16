@@ -55,8 +55,8 @@ function withTransition(dir, update) {
   update();
 
   const opts = {
-    duration: 300,
-    easing: 'cubic-bezier(.2, .8, .2, 1)',
+    duration: 480,
+    easing: 'cubic-bezier(.32, .72, 0, 1)', // the iOS push curve: quick to start, long gentle settle
     fill: 'forwards'
   };
   const offRight = {
