@@ -4,13 +4,25 @@ A personal workout tracker for Shep's phone (a replacement for the Rep Count app
 
 ## Files
 
-- `index.html` is the whole app: HTML, CSS and JavaScript in one file, with no build step and no dependencies. Keep it that way unless asked.
-- `sw.js` is the service worker for offline use. It fetches the latest files when online and falls back to its cache when offline.
+No build step and no dependencies: the browser loads these files directly. Keep it that way unless asked.
+
+- `index.html` is just the page skeleton (top bar, main area, tab bar, sheet) plus the `<link>` and `<script defer>` tags.
+- `styles.css` holds all styling. Later rules override earlier ones, so order matters.
+- `js/` holds the app, as plain scripts (not ES modules) that share one global scope. They load in the order listed in `index.html`, so a file can use anything from the files before it at load time, and anything from any file inside functions that run later:
+  - `core.js`: helpers, `APP_VERSION`, app state `S`/`view`, the data model and history lookups (`lastFor`, `historyFor`).
+  - `sync.js`: GitHub data-repo sync (push, pull, merge).
+  - `media.js`: set videos and progress photos (IndexedDB, thumbnails, viewer, upload).
+  - `views.js`: the screens, rendered as HTML strings (`render()`, `vWorkout()`, ...).
+  - `sheets.js`: bottom sheets, including the exercise picker.
+  - `import.js`: CSV import and backup restore.
+  - `actions.js`: `ACT`, the handlers for every `data-a="..."` button.
+  - `app.js`: event wiring and startup. Must load last.
+- `sw.js` is the service worker for offline use. It fetches the latest files when online and falls back to its cache when offline. **When you add, rename or remove a file, update its `F` list.**
 - `manifest.json` and `icon-*.png` handle the home-screen install.
 
 ## Shipping a change
 
-- On every change, bump `APP_VERSION` in `index.html` **and** the cache name `liftlog-vN` in `sw.js` to the same number. If they aren't bumped, phones can keep showing the old version. The version shows at the bottom of the Settings tab.
+- On every change, bump `APP_VERSION` in `js/core.js` **and** the cache name `liftlog-vN` in `sw.js` to the same number. If they aren't bumped, phones can keep showing the old version. The version shows at the bottom of the Settings tab.
 - Pushing to `main` publishes to GitHub Pages in about a minute.
 - To test locally, use VS Code's Live Server (`http://127.0.0.1:5500`). The service worker only registers on https, so local testing never gets stuck on a cached copy.
 
