@@ -54,6 +54,7 @@ No build step and no dependencies: the browser loads these files directly. Keep 
 - Machine settings are a single plain-text field opened from the ⚙︎ icon.
 - Set videos belong to one specific set and show in that exercise's history. "Progress check" photos and videos belong to the whole workout.
 - Rep Count CSV import: a new workout starts whenever the workout name **or** the "Workout Start" time changes from the row above. Muscle group comes from the Category column.
+- Page changes animate (View Transitions API): opening something slides in from the right, going back slides out to the right, switching tabs crossfades. All navigation goes through `go()` in `js/actions.js`, so new screens get this for free. Typing and in-page updates don't animate, and iOS Reduce Motion turns it off.
 - The UI is dark, compact and phone-first, with lime (`--acc`) used only for done or tappable things.
 
 ## Testing

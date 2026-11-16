@@ -1030,3 +1030,92 @@ ol li {
   font-size: 14px;
   padding: 8px 2px 6px
 }
+
+/* ---------- page transitions (View Transitions API; see withTransition in js/actions.js) ---------- */
+#main {
+  view-transition-name: page;
+  background: var(--bg);
+}
+
+#top {
+  view-transition-name: topbar;
+}
+
+#tabs {
+  view-transition-name: tabbar;
+}
+
+/* The rest of the page doesn't move. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(*) {
+  animation-duration: .25s;
+}
+
+/* Top bar title swaps with a short crossfade so the two titles don't overlap for long. */
+::view-transition-old(topbar),
+::view-transition-new(topbar) {
+  animation-duration: .12s;
+}
+
+::view-transition-old(page),
+::view-transition-new(page) {
+  animation-duration: .25s;
+  animation-timing-function: cubic-bezier(.2, .8, .2, 1);
+  animation-fill-mode: both;
+}
+
+/* Opening something: new page slides in from the right over the old one. */
+html[data-nav="forward"]::view-transition-old(page) {
+  animation-name: nav-out-left;
+}
+
+html[data-nav="forward"]::view-transition-new(page) {
+  animation-name: nav-in-right;
+}
+
+/* Going back: current page slides out to the right, revealing the one underneath. */
+html[data-nav="back"]::view-transition-old(page) {
+  animation-name: nav-out-right;
+  z-index: 1;
+}
+
+html[data-nav="back"]::view-transition-new(page) {
+  animation-name: nav-in-left;
+}
+
+/* Switching tabs: quick crossfade. */
+html[data-nav="fade"]::view-transition-old(page),
+html[data-nav="fade"]::view-transition-new(page) {
+  animation-duration: .18s;
+  animation-timing-function: ease;
+}
+
+@keyframes nav-in-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes nav-out-left {
+  to {
+    transform: translateX(-25%);
+    opacity: 0;
+  }
+}
+
+@keyframes nav-out-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes nav-in-left {
+  from {
+    transform: translateX(-25%);
+    opacity: 0;
+  }
+}

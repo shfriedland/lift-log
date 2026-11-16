@@ -47,12 +47,9 @@ document.addEventListener('click', e => {
         routineId: null
       }
     } [t] || {});
-    else {
-      view.tab = t;
-      openNotes.clear();
-      render();
-      window.scrollTo(0, 0)
-    }
+    else go({
+      tab: t
+    })
     return
   }
   const fn = ACT[b.dataset.a];

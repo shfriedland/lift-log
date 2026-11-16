@@ -3,11 +3,47 @@
 
 const curW = () => S.workouts[view.workoutId];
 
+// How deep a page is: 0 for a tab's list, 1 for something opened from it.
+function pageDepth(v) {
+  return ({
+    log: v.workoutId,
+    ex: v.exerciseId,
+    rt: v.routineId
+  } [v.tab]) ? 1 : 0
+}
+
+// Which way the page change should animate: 'forward' (slide in from the right),
+// 'back' (slide out to the right), 'fade' (switching tabs) or '' (no animation).
+function navDirection(from, to) {
+  const d1 = pageDepth(from),
+    d2 = pageDepth(to);
+  if (from.tab !== to.tab) return d2 > d1 ? 'forward' : 'fade';
+  if (d2 > d1) return 'forward';
+  if (d2 < d1) return 'back';
+  return ''
+}
+
+const reduceMotion = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+
+// Run a page change, animated with the View Transitions API when the browser has it.
+function withTransition(dir, update) {
+  if (!dir || !document.startViewTransition || (reduceMotion && reduceMotion.matches)) return update();
+  const root = document.documentElement;
+  root.dataset.nav = dir;
+  const t = document.startViewTransition(update);
+  t.finished.finally(() => {
+    if (root.dataset.nav === dir) delete root.dataset.nav
+  })
+}
+
 function go(v) {
+  const from = Object.assign({}, view);
   Object.assign(view, v);
-  openNotes.clear();
-  render();
-  window.scrollTo(0, 0)
+  withTransition(navDirection(from, view), () => {
+    openNotes.clear();
+    render();
+    window.scrollTo(0, 0)
+  })
 }
 
 function newWorkout(entries, name, routineId) {
