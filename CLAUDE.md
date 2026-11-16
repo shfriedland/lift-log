@@ -34,9 +34,11 @@ A personal workout tracker for Shep's phone (a replacement for the Rep Count app
 
 ## Behavior Shep asked for (keep it)
 
-- The "Previous" column and last-time numbers come **only from the same routine** (matched by `routineId` or by workout name). There's no fallback to other routines. A plain unnamed "Workout" uses any history.
+- There is no "Previous" column on the workout screen. Each set row is SET | weight | reps | an always-visible note field (the widest column) | video-icon button that opens that set's videos. The weight and reps boxes show last time's numbers for that set as placeholder hints (reps falls back to the routine target).
+- Last-time numbers (used to prefill new sets) come **only from the same routine** (matched by `routineId` or by workout name). There's no fallback to other routines. A plain unnamed "Workout" uses any history.
 - Warm-up sets (tap the set number) don't count toward volume, est. 1RM, heaviest, or working-set numbering. Holding the set number opens Delete / warm-up options.
 - There are no check-mark buttons on sets.
+- Exercise ⋯ menu → "Replace exercise" swaps the exercise but keeps its sets as they are. The picker starts filtered to the same category (muscle group), with "Show all" to see every exercise.
 - Machine settings are a single plain-text field opened from the ⚙︎ icon.
 - Set videos belong to one specific set and show in that exercise's history. "Progress check" photos and videos belong to the whole workout.
 - Rep Count CSV import: a new workout starts whenever the workout name **or** the "Workout Start" time changes from the row above. Muscle group comes from the Category column.
