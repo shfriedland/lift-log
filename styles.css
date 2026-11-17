@@ -1,8 +1,8 @@
 :root {
   --bg: #0b0d11;
-  --card: rgba(255, 255, 255, .045);
+  --card: rgba(255, 255, 255, .055);
   --card2: rgba(255, 255, 255, .08);
-  --line: rgba(255, 255, 255, .09);
+  --line: rgba(255, 255, 255, .07);
   --text: #eef0f3;
   --mut: #8b93a1;
   --acc: #c6f432;
@@ -10,10 +10,13 @@
   --red: #ff6b6b;
   --doneBg: rgba(198, 244, 50, .13);
   /* Glass material: used by everything that floats over the content (top bar buttons, tab bar, sheets, toast). */
-  --glass: rgba(30, 34, 42, .55);
-  --glass-brd: rgba(255, 255, 255, .13);
-  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .18);
-  --glass-blur: blur(24px) saturate(180%);
+  --glass: rgba(28, 32, 40, .22);
+  --glass-brd: rgba(255, 255, 255, .17);
+  /* bright top edge where light catches the glass, and a faint one along the bottom */
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .32), inset 0 0 1.25rem rgba(255, 255, 255, .05);
+  --glass-blur: blur(22px) saturate(210%) brightness(1.12);
+  /* soft sheen across the top half, layered over the tint: background: var(--glass-sheen), var(--glass) */
+  --glass-sheen: linear-gradient(to bottom, rgba(255, 255, 255, .13), rgba(255, 255, 255, .03) 50%, rgba(255, 255, 255, .06));
 }
 
 * {
@@ -177,7 +180,7 @@ main {
   padding: 0.3125rem;
   border-radius: 62.4375rem;
   border: 1px solid var(--glass-brd);
-  background: var(--glass);
+  background: var(--glass-sheen), var(--glass);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-hi), 0 12px 32px rgba(0, 0, 0, .5);
@@ -218,7 +221,8 @@ main {
   padding: 0.875rem;
   margin: 0 0 0.75rem;
   border: 1px solid var(--line);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, .035), rgba(255, 255, 255, 0) 40%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
 }
 
 .row {
@@ -858,9 +862,9 @@ ol li {
   padding: 1.75rem 1rem 1.125rem;
   border-radius: 1.875rem;
   border: 1px solid var(--glass-brd);
-  background: rgba(24, 27, 34, .72);
-  backdrop-filter: blur(30px) saturate(170%);
-  -webkit-backdrop-filter: blur(30px) saturate(170%);
+  background: var(--glass-sheen), rgba(22, 25, 32, .42);
+  backdrop-filter: blur(30px) saturate(200%) brightness(1.08);
+  -webkit-backdrop-filter: blur(30px) saturate(200%) brightness(1.08);
   box-shadow: var(--glass-hi), 0 -10px 40px rgba(0, 0, 0, .4);
   -webkit-overflow-scrolling: touch;
 }
@@ -914,7 +918,7 @@ ol li {
   left: 50%;
   bottom: calc(6.5rem + env(safe-area-inset-bottom));
   transform: translateX(-50%) translateY(20px);
-  background: var(--glass);
+  background: var(--glass-sheen), var(--glass);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-brd);
@@ -1075,9 +1079,11 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(70% 38% at 10% 0%, rgba(198, 244, 50, .13), transparent 70%),
-    radial-gradient(60% 42% at 105% 48%, rgba(56, 189, 248, .11), transparent 70%),
-    radial-gradient(70% 40% at 0% 100%, rgba(45, 212, 191, .11), transparent 70%);
+    radial-gradient(60% 34% at 8% 2%, rgba(198, 244, 50, .26), transparent 70%),
+    radial-gradient(55% 38% at 104% 30%, rgba(56, 189, 248, .24), transparent 70%),
+    radial-gradient(50% 30% at 30% 62%, rgba(139, 92, 246, .14), transparent 70%),
+    radial-gradient(65% 36% at 0% 100%, rgba(45, 212, 191, .22), transparent 70%),
+    radial-gradient(45% 28% at 100% 96%, rgba(198, 244, 50, .12), transparent 70%);
 }
 
 /* Top bar: no solid strip. Content blurs and fades out as it scrolls under it. */
@@ -1107,10 +1113,54 @@ body::after {
   background: linear-gradient(to top, rgba(11, 13, 17, .95) 25%, rgba(11, 13, 17, 0));
 }
 
+/* Light-catching rim: a 1px edge that is brightest at the top-left (where the light hits) and fades around
+   the shape, with a faint glint again at the bottom-right. Drawn as a masked gradient ring, so it follows any
+   border radius. */
+#tabs::after,
+#sheet::after,
+#toast::after,
+#top .home::after,
+#top .backIcon::after,
+.card::after,
+.stats div::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(150deg, rgba(255, 255, 255, .55), rgba(255, 255, 255, .14) 22%, rgba(255, 255, 255, .03) 50%, rgba(255, 255, 255, .06) 78%, rgba(255, 255, 255, .28));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+/* Cards are quieter than the floating glass, so their rim is softer. */
+.card::after,
+.stats div::after {
+  opacity: .55;
+}
+
+.card,
+.stats div,
+#top .home,
+#top .backIcon {
+  position: relative;
+}
+
+/* The rim replaces the flat border on glass surfaces. */
+#tabs,
+#sheet,
+#toast,
+#top .home,
+#top .backIcon {
+  border-color: rgba(255, 255, 255, .06);
+}
+
 /* Round glass buttons in the top bar. */
 #top .home,
 #top .backIcon {
-  background: var(--glass);
+  background: var(--glass-sheen), var(--glass);
   border: 1px solid var(--glass-brd);
   box-shadow: var(--glass-hi), 0 4px 14px rgba(0, 0, 0, .3);
   backdrop-filter: var(--glass-blur);
@@ -1140,8 +1190,8 @@ body::after {
     left: 0.3125rem;
     width: calc((100% - 0.625rem) / 4);
     border-radius: 62.4375rem;
-    background: rgba(255, 255, 255, .11);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 0 0 1px rgba(255, 255, 255, .05);
+    background: linear-gradient(to bottom, rgba(255, 255, 255, .17), rgba(255, 255, 255, .09));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), inset 0 0 0 1px rgba(255, 255, 255, .06);
     transition: transform .5s cubic-bezier(.32, .72, 0, 1);
   }
 
