@@ -1,7 +1,7 @@
 // Helpers, app state, and the data model (workouts, exercises, routines, history lookups).
 "use strict";
 
-const APP_VERSION = 23; // keep in step with the cache name in sw.js
+const APP_VERSION = 25; // keep in step with the cache name in sw.js
 const LS = 'liftlog.v1',
   LSV = 'liftlog.view';
 const $ = s => document.querySelector(s);
@@ -12,6 +12,31 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
   '"': '&quot;',
   "'": '&#39;'
 } [c]));
+// Text size follows the iPhone's setting (Settings > Display & Brightness > Text Size).
+// Safari reports it through the `-apple-system-body` font, which is 17px at the default size. All sizes in
+// styles.css are in rem, so scaling the root font size scales text and layout together. The scale is capped
+// so the set rows still fit on a phone at the largest sizes. Other browsers keep the normal 16px.
+function applyTextSize() {
+  let scale = 1;
+  try {
+    if (window.CSS && CSS.supports('font', '-apple-system-body')) {
+      const probe = document.createElement('span');
+      probe.style.font = '-apple-system-body';
+      probe.style.position = 'absolute';
+      probe.style.visibility = 'hidden';
+      document.body.appendChild(probe);
+      const px = parseFloat(getComputedStyle(probe).fontSize);
+      probe.remove();
+      if (px > 0) scale = Math.min(1.35, Math.max(.88, px / 17))
+    }
+  } catch (e) {}
+  document.documentElement.style.fontSize = scale === 1 ? '' : (16 * scale).toFixed(2) + 'px'
+}
+applyTextSize();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') applyTextSize() // came back after changing the setting
+});
+
 const now = () => Date.now();
 const newId = () => now().toString(36) + Math.random().toString(36).slice(2, 7);
 const sleep = ms => new Promise(r => setTimeout(r, ms));

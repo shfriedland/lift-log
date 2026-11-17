@@ -2,14 +2,15 @@
 "use strict";
 
 function openSheet(html) {
-  $('#sheet').innerHTML = html;
-  $('#sheetWrap').classList.add('on');
+  // #sheetGrab is the strip at the top you can drag to close the sheet (see js/motion.js)
+  $('#sheet').innerHTML = '<div id="sheetGrab"></div>' + html;
+  showSheet();
   $('#sheet').scrollTop = 0;
   $('#sheet').querySelectorAll('textarea').forEach(autoGrow)
 }
 
 function closeSheet() {
-  $('#sheetWrap').classList.remove('on');
+  hideSheet();
   sheetCtx = null;
   if (viewURL) {
     const v = $('#mv video');

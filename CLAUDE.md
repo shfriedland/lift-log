@@ -14,6 +14,7 @@ No build step and no dependencies: the browser loads these files directly. Keep 
   - `media.js`: set videos and progress photos (IndexedDB, thumbnails, viewer, upload).
   - `views.js`: the screens, rendered as HTML strings (`render()`, `vWorkout()`, ...).
   - `sheets.js`: bottom sheets, including the exercise picker.
+  - `motion.js`: springs, page transitions (`withTransition`), and the sheet's open / close / drag-to-dismiss.
   - `import.js`: CSV import and backup restore.
   - `actions.js`: `ACT`, the handlers for every `data-a="..."` button.
   - `app.js`: event wiring and startup. Must load last.
@@ -54,7 +55,14 @@ No build step and no dependencies: the browser loads these files directly. Keep 
 - Machine settings are a single plain-text field opened from the ⚙︎ icon.
 - Set videos belong to one specific set and show in that exercise's history. "Progress check" photos and videos belong to the whole workout.
 - Rep Count CSV import: a new workout starts whenever the workout name **or** the "Workout Start" time changes from the row above. Muscle group comes from the Category column.
-- Page changes animate: opening something slides in from the right, going back slides out to the right, switching tabs fades and the tab bar highlight slides across. All navigation goes through `go()` in `js/actions.js` (`withTransition`), so new screens get this for free. The slide keeps a short-lived copy of the old page (`.pageGhost`); it does not use the View Transitions API, because that froze the glass bars into flat snapshots. Typing and in-page updates don't animate, and iOS Reduce Motion turns it all off.
+- Motion follows Apple's fluid-interface rules (the `apple-design` skill in `.claude/skills/` has the full guidance), all in `js/motion.js`:
+  - Page changes go through `go()` → `withTransition`: opening slides in from the right, going back slides out to the right, switching tabs fades while the tab highlight slides. The slide keeps a short-lived copy of the old page (`.pageGhost`). It does not use the View Transitions API, because that froze the glass bars into flat snapshots.
+  - Sheets open and close with springs (`showSheet` / `hideSheet`, never by toggling the `on` class directly) and can be dragged shut by the strip at the top (`#sheetGrab`): 1:1 with the finger, rubber-band when pulled up, flick to dismiss.
+  - Animations start from where things currently are and never block taps. No bounce unless a flick caused the motion. Pressed states show within 0.1s.
+  - Swipe from the left edge (within 24px) on a workout, exercise or routine to go back: the page follows the finger over a copy of the list (`.pageUnder`); past halfway or a flick commits, otherwise it springs back.
+  - `haptic()` gives a light tap only for: long-press set menu, sheet flicked shut, swipe-back committing. On iPhone it toggles a hidden switch checkbox (iOS 18+ plays a haptic for that); there's no other way for a web app.
+  - Text size follows the iPhone's Text Size setting (`applyTextSize()` in `js/core.js`, capped at 0.88–1.35×). **All sizes in `styles.css` are `rem` (1rem = 16px at normal size); write new ones in rem too**, except borders, shadows and blur. The set row's fixed columns are capped with `min()` so notes keep their room at big sizes.
+  - iOS accessibility settings are honored in `styles.css`: Reduce Motion (plain fades, no slides or springs), Reduce Transparency (solid instead of glass), Increase Contrast.
 - The UI is dark, compact and phone-first, with lime (`--acc`) used only for done or tappable things.
 - The look is "liquid glass" done the Apple way: glass (blur + translucent tint + bright top edge, the `--glass*` variables in `styles.css`) only on things that float over content: the pill tab bar, the round top-bar buttons, sheets and the toast. Content cards stay plain and readable, with no `backdrop-filter` on them (it makes scrolling stutter on phones). A faint colored glow (`body::before`) sits behind everything so the glass has something to blur.
 

@@ -10,9 +10,7 @@ document.addEventListener('pointerdown', e => {
   clearTimeout(lpTimer);
   lpTimer = setTimeout(() => {
     lpFired = true;
-    if (navigator.vibrate) try {
-      navigator.vibrate(15)
-    } catch (x) {}
+    haptic();
     ACT.setMenu(b.dataset)
   }, 500)
 });

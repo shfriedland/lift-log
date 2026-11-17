@@ -3,86 +3,6 @@
 
 const curW = () => S.workouts[view.workoutId];
 
-// How deep a page is: 0 for a tab's list, 1 for something opened from it.
-function pageDepth(v) {
-  return ({
-    log: v.workoutId,
-    ex: v.exerciseId,
-    rt: v.routineId
-  } [v.tab]) ? 1 : 0
-}
-
-// Which way the page change should animate: 'forward' (slide in from the right),
-// 'back' (slide out to the right), 'fade' (switching tabs) or '' (no animation).
-function navDirection(from, to) {
-  const d1 = pageDepth(from),
-    d2 = pageDepth(to);
-  if (from.tab !== to.tab) return d2 > d1 ? 'forward' : 'fade';
-  if (d2 > d1) return 'forward';
-  if (d2 < d1) return 'back';
-  return ''
-}
-
-const reduceMotion = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
-
-// Run a page change with its animation.
-// Tab switches fade the new page in. Opening and going back slide: the old page is kept for a moment as a
-// lifeless copy (.pageGhost) and animated out while the real #main animates in. The top bar and tab bar are
-// untouched, so their glass stays live while the pages move underneath.
-function withTransition(dir, update) {
-  const main = $('#main');
-  if (!dir || !main.animate || (reduceMotion && reduceMotion.matches)) return update();
-  if (dir === 'fade') {
-    update();
-    main.classList.remove('fadeIn');
-    void main.offsetWidth; // restart the animation if it was already running
-    main.classList.add('fadeIn');
-    return
-  }
-  document.querySelectorAll('.pageGhost').forEach(g => g.remove());
-  const r = main.getBoundingClientRect();
-  const ghost = main.cloneNode(true);
-  ghost.removeAttribute('id');
-  ghost.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
-  ghost.className = 'pageGhost';
-  ghost.setAttribute('aria-hidden', 'true');
-  Object.assign(ghost.style, {
-    top: r.top + 'px',
-    left: r.left + 'px',
-    width: r.width + 'px'
-  });
-  main.before(ghost);
-  update();
-
-  const opts = {
-    duration: 480,
-    easing: 'cubic-bezier(.32, .72, 0, 1)', // the iOS push curve: quick to start, long gentle settle
-    fill: 'forwards'
-  };
-  const offRight = {
-      transform: 'translateX(100%)'
-    },
-    inPlace = {
-      transform: 'none',
-      opacity: 1
-    },
-    tuckedLeft = {
-      transform: 'translateX(-25%)',
-      opacity: 0
-    };
-  // The page on top gets a solid backdrop (.pageCover) so the one underneath doesn't show through it.
-  const top = dir === 'forward' ? main : ghost;
-  top.classList.add('pageCover');
-  let anims;
-  if (dir === 'forward') anims = [main.animate([offRight, inPlace], opts), ghost.animate([inPlace, tuckedLeft], opts)];
-  else anims = [main.animate([tuckedLeft, inPlace], opts), ghost.animate([inPlace, offRight], opts)];
-  Promise.all(anims.map(a => a.finished)).catch(() => {}).then(() => {
-    ghost.remove();
-    main.classList.remove('pageCover');
-    anims[0].cancel()
-  })
-}
-
 function go(v) {
   const from = Object.assign({}, view);
   Object.assign(view, v);
@@ -107,7 +27,7 @@ function newWorkout(entries, name, routineId) {
   S.workouts[w.id] = w;
   touchW(w);
   sheetCtx = null;
-  $('#sheetWrap').classList.remove('on');
+  hideSheet();
   go({
     tab: 'log',
     workoutId: w.id
@@ -357,7 +277,7 @@ const ACT = {
     const dupe = liveEx().find(e => e.name.toLowerCase() === n.toLowerCase());
     if (dupe) {
       sheetCtx = null;
-      $('#sheetWrap').classList.remove('on');
+      hideSheet();
       go({
         exerciseId: dupe.id
       });
@@ -374,7 +294,7 @@ const ACT = {
     };
     touchEx(S.exercises[id]);
     sheetCtx = null;
-    $('#sheetWrap').classList.remove('on');
+    hideSheet();
     go({
       exerciseId: id
     })
@@ -437,7 +357,7 @@ const ACT = {
   },
   home() {
     sheetCtx = null;
-    $('#sheetWrap').classList.remove('on');
+    hideSheet();
     go({
       tab: 'log',
       workoutId: null,
