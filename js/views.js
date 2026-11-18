@@ -7,6 +7,7 @@ function render() {
   if (view.tab === 'log') m.innerHTML = view.workoutId ? vWorkout() : vLog();
   else if (view.tab === 'ex') m.innerHTML = view.exerciseId ? vExercise() : vExList();
   else if (view.tab === 'rt') m.innerHTML = view.routineId ? vRoutine() : vRoutines();
+  else if (view.tab === 'cd') m.innerHTML = view.cardioId ? vCardio() : vCardioList();
   else m.innerHTML = vSettings();
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === view.tab));
   m.querySelectorAll('textarea').forEach(autoGrow);
@@ -32,13 +33,31 @@ function renderTop() {
   } else if (view.tab === 'rt' && view.routineId) {
     sub = true;
     left = `<button class="backIcon" data-a="back" aria-label="Back">‹</button><h1>${esc((S.routines[view.routineId]||{}).name||'Routine')}</h1>`
-  } else left = `<h1>${{log:'Workouts',rt:'Routines',ex:'Exercises',set:'Settings'}[view.tab]}</h1>`;
+  } else if (view.tab === 'cd' && view.cardioId && S.workouts[view.cardioId]) {
+    sub = true;
+    left = `<button class="backIcon" data-a="back" aria-label="Back">‹</button><h1>${esc(S.workouts[view.cardioId].type||'Cardio')}</h1>`;
+    trash = `<button class="home trash" data-a="delCardio" aria-label="Delete cardio session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg></button>`
+  } else left = `<h1>${{log:'Workouts',rt:'Routines',ex:'Exercises',set:'Settings',cd:'Cardio'}[view.tab]}</h1>`;
   $('#top').innerHTML = `${left}${trash}${sub?home:''}${dot}`
 }
 
 function autoGrow(t) {
   t.style.height = 'auto';
-  t.style.height = Math.max(42, t.scrollHeight + 2) + 'px'
+  t.style.height = (t.scrollHeight + 2) + 'px'
+}
+
+// The date box on the left of a workout card: small month (and year, if not this year) above a big day number.
+function dateBox(d) {
+  const [y, m, dd] = d.split('-').map(Number);
+  const dt = new Date(y, m - 1, dd);
+  const mon = dt.toLocaleDateString(undefined, {
+    month: 'short'
+  });
+  const yr = y !== new Date().getFullYear() ? ` '${String(y).slice(2)}` : '';
+  const wd = dt.toLocaleDateString(undefined, {
+    weekday: 'short'
+  });
+  return `<div class="dbox" aria-label="${esc(prettyDate(d))}"><span class="dmon">${esc(mon + yr)}</span><b class="dday">${dd}</b><span class="dwd">${esc(wd)}</span></div>`
 }
 
 function vLog() {
@@ -56,9 +75,14 @@ function vLog() {
     }
     const names = w.entries.map(e => exName(e.exId));
     const sets = w.entries.reduce((a, e) => a + e.sets.filter(x => hasData(x) && isWork(x)).length, 0);
-    h += `<button class="card wcard" data-a="openW" data-id="${w.id}"><div class="row"><b>${esc(w.name||'Workout')}</b><span class="mut sm">${prettyDate(w.date)}</span></div>
-    <div class="mut sm">${esc(names.slice(0,4).join(', '))}${names.length>4?' +'+(names.length-4)+' more':''}${names.length?'':'No exercises yet'}</div>
-    <div class="mut sm">${sets} sets · ${fmtVol(vol(w))} ${S.unit}${mediaCount(w)?` · <span class="hmedia">${mediaCount(w)} ${CAM_ICON}</span>`:''}</div></button>`
+    const stats = [];
+    if (w.entries.length) stats.push(`${sets} sets · ${fmtVol(vol(w))} ${S.unit}`);
+    if (mediaCount(w)) stats.push(`<span class="hmedia">${mediaCount(w)} ${CAM_ICON}</span>`);
+    // date box | name (big) with sets and pounds under it | exercises as a vertical list
+    const shown = names.length > 5 ? names.slice(0, 4) : names;
+    h += `<button class="card wcard lift" data-a="openW" data-id="${w.id}">${dateBox(w.date)}
+    <div class="wmain"><b class="wname">${esc(w.name||'Workout')}</b>${stats.length?`<div class="wstats">${stats.join(' · ')}</div>`:''}</div>
+    <ul class="wex">${shown.map(n=>`<li>${esc(n)}</li>`).join('')}${names.length>shown.length?`<li class="more">+${names.length-shown.length} more</li>`:''}${names.length?'':'<li class="more">No exercises yet</li>'}</ul></button>`
   }
   return h
 }
@@ -87,7 +111,7 @@ function vWorkout() {
     view.workoutId = null;
     return vLog()
   }
-  let h = '';
+  let h = `<textarea class="wnotes" data-f="wnotes" rows="1" placeholder="Workout notes">${esc(w.notes||'')}</textarea>`;
   w.entries.forEach((en, i) => {
     const ex = S.exercises[en.exId];
     const last = lastFor(en.exId, w);
@@ -108,7 +132,7 @@ function vWorkout() {
       h += `<div class="set ${done?'done':''} ${s.warmup?'warm':''}"><button class="n ${s.warmup?'wu':''}" data-a="toggleWarm" data-i="${i}" data-j="${j}" aria-label="${s.warmup?'Warm-up set':'Set '+wn}. Tap to switch warm-up, hold for options">${s.warmup?'W':(done?'✓':wn)}</button>
       <input inputmode="decimal" data-f="w" data-i="${i}" data-j="${j}" value="${esc(s.w)}" placeholder="${ls&&ls.w!==''?esc(ls.w):''}" aria-label="Weight">
       <input inputmode="numeric" data-f="r" data-i="${i}" data-j="${j}" value="${esc(s.r)}" placeholder="${ls&&ls.r!==''?esc(ls.r):en.target?esc(tgtLow(en.target)):''}" aria-label="Reps">
-      <input class="ni" data-f="note" data-i="${i}" data-j="${j}" value="${esc(s.note||'')}" aria-label="Note for ${s.warmup?'warm-up':'set '+wn}" autocomplete="off">
+      <textarea class="ni" data-f="note" data-i="${i}" data-j="${j}" rows="1" aria-label="Note for ${s.warmup?'warm-up':'set '+wn}">${esc(s.note||'')}</textarea>
       <button class="icon note vid ${hasM?'has':''}" data-a="note" data-i="${i}" data-j="${j}" aria-label="Set video">${VID_ICON}</button></div>`;
       if (openNotes.has(key)) h += `<div class="noteRow">${s.media&&s.media.length?`<div class="thumbs">${thumbsHtml(s.media)}</div>`:''}
         <div class="tools"><label class="addMedia">${VID_ICON} Add video<input type="file" accept="video/*,image/*" data-media="set" data-i="${i}" data-j="${j}" hidden></label></div></div>`
@@ -116,10 +140,10 @@ function vWorkout() {
     h += `<button class="addSet" data-a="addSet" data-i="${i}">+ Add set</button></div>`
   });
   h += `<button class="primary" data-a="addEx">+ Add exercise</button>
+
   <div class="card"><h3>Progress check</h3><div class="mut sm">Photos or video of you for this workout.</div>${(w.media||[]).length?`<div class="thumbs">${thumbsHtml(w.media,true)}</div>`:''}
   <label class="addMedia" style="margin-top:8px">+ Add photos or video<input type="file" accept="image/*,video/*" multiple data-media="workout" hidden></label></div>
-  <textarea class="wnotes" data-f="wnotes" placeholder="Workout notes">${esc(w.notes||'')}</textarea>
-  <div class="mut sm center">${fmtVol(vol(w))} ${S.unit} total volume</div>
+  ${w.entries.length?`<div class="mut sm center">${fmtVol(vol(w))} ${S.unit} total volume</div>`:''}
   <button class="ghost" data-a="finishW">${w.finishedAt?'Done':'Finish workout'}</button>
   ${w.entries.length?`<button class="ghost" data-a="saveAsRoutine">${w.routineId&&S.routines[w.routineId]&&!S.routines[w.routineId].deleted?'Update routine with these exercises':'Save as routine'}</button>`:''}`;
   return h
@@ -139,7 +163,7 @@ function vExList() {
       lc = cat;
       h += `<div class="month" data-cat>${esc(cat)}</div>`
     }
-    h += `<button class="card exrow" data-a="openEx" data-id="${e.id}" data-name="${esc((e.name+' '+(e.category||'')).toLowerCase())}"><div><b>${esc(e.name)}</b>${sum?`<div class="sm" style="color:#d6f57a">⚙︎ ${esc(sum)}</div>`:''}<div class="mut sm">${lu[e.id]?'Last done '+prettyDate(lu[e.id]):'Not logged yet'}</div></div><span class="mut">›</span></button>`
+    h += `<button class="card exrow" data-a="openEx" data-id="${e.id}" data-name="${esc((e.name+' '+(e.category||'')).toLowerCase())}"><div><b>${esc(e.name)}</b>${sum?`<div class="sm" style="color:#c9c8ff">⚙︎ ${esc(sum)}</div>`:''}<div class="mut sm">${lu[e.id]?'Last done '+prettyDate(lu[e.id]):'Not logged yet'}</div></div><span class="mut">›</span></button>`
   }
   return h
 }
@@ -197,7 +221,7 @@ function vSettings() {
     <button class="ghost" data-a="copyBackup">Copy backup to clipboard</button>
     <label class="filebtn ghost">Restore from a backup file<input type="file" accept=".json,.txt,application/json,text/plain" id="jsonFile" hidden></label>
     <button class="ghost" data-a="pasteRestore">Restore from pasted text</button></div>
-  <div class="mut sm center">${liveW().length} workouts · ${liveEx().length} exercises · app version ${APP_VERSION}</div>`
+  <div class="mut sm center">${liveW().length} workouts · ${liveC().length} cardio · ${liveEx().length} exercises · app version ${APP_VERSION}</div>`
 }
 
 function vRoutines() {
@@ -265,4 +289,46 @@ function upsertRoutineFrom(w, existing) {
   S.routines[r.id] = r;
   touchR(r);
   return r
+}
+
+// ---------- cardio ----------
+function vCardioList() {
+  const cs = liveC().sort(sortW);
+  let h = `<button class="primary big" data-a="logCardio">+ Log cardio</button>`;
+  if (!cs.length) h += `<div class="empty">No cardio yet.<br>Log a run, ride, row or anything else here.</div>`;
+  let lm = '';
+  for (const c of cs) {
+    const mk = c.date.slice(0, 7);
+    if (mk !== lm) {
+      lm = mk;
+      h += `<div class="month">${monthLabel(mk)}</div>`
+    }
+    const sum = cardioSummary(c),
+      pace = paceText(c);
+    h += `<button class="card wcard" data-a="openCardio" data-id="${c.id}">${dateBox(c.date)}<div class="wbody"><b>${esc(c.type||'Cardio')}</b>
+    <div class="mut sm">${sum?esc(sum):'Nothing logged yet'}</div>${pace?`<div class="mut sm">${esc(pace)}</div>`:''}${c.note?`<div class="mut sm cnote">${esc(c.note)}</div>`:''}</div></button>`
+  }
+  return h
+}
+
+function vCardio() {
+  const c = S.workouts[view.cardioId];
+  if (!c || c.deleted || !isCardio(c)) {
+    view.cardioId = null;
+    return vCardioList()
+  }
+  const last = lastCardio(c.type, c),
+    du = c.du || 'mi';
+  const types = CARDIO_TYPES.concat(CARDIO_TYPES.includes(c.type) ? [] : [c.type]);
+  return `<div class="card cform">
+    <div class="cfield"><label class="lbl" for="cType">Type</label><select id="cType" class="ctype" data-f="cType">${types.map(t=>`<option ${t===c.type?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
+    <div class="cfield"><label class="lbl" for="cDate">Date</label><input id="cDate" type="date" data-f="cDate" value="${c.date}"></div>
+    <div class="cbig">
+      <label><span class="lbl">Time (min)</span><input inputmode="decimal" data-f="cMin" value="${esc(c.min)}" placeholder="${last&&last.min!==''?esc(last.min):'0'}" autocomplete="off"></label>
+      <label><span class="lbl">Distance (${esc(du)})</span><input inputmode="decimal" data-f="cDist" value="${esc(c.dist)}" placeholder="${last&&last.dist!==''?esc(last.dist):'0'}" autocomplete="off"></label>
+    </div>
+    <div class="pace" id="cPace">${esc(paceText(c))}</div>
+    <label class="lbl" for="cNote">Notes</label><textarea id="cNote" data-f="cNote" rows="2" placeholder="How it felt, route, heart rate…">${esc(c.note||'')}</textarea>
+  </div>
+  <button class="ghost" data-a="back">Done</button>`
 }

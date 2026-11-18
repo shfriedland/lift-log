@@ -5,16 +5,18 @@
   --line: rgba(255, 255, 255, .07);
   --text: #eef0f3;
   --mut: #8b93a1;
-  --acc: #c6f432;
-  --accT: #11140a;
+  --acc: #a6a5dc;
+  /* indigo: --acc is the text and icon tint (light enough to read on the dark background), --accFill the button color */
+  --accFill: #5f5ea6;
+  --accT: #ffffff;
   --red: #ff6b6b;
-  --doneBg: rgba(198, 244, 50, .13);
+  --doneBg: rgba(95, 94, 166, .13);
   /* Glass material: used by everything that floats over the content (top bar buttons, tab bar, sheets, toast). */
   --glass: rgba(28, 32, 40, .22);
   --glass-brd: rgba(255, 255, 255, .17);
   /* bright top edge where light catches the glass, and a faint one along the bottom */
   --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .32), inset 0 0 1.25rem rgba(255, 255, 255, .05);
-  --glass-blur: blur(22px) saturate(210%) brightness(1.12);
+  --glass-blur: blur(22px) saturate(130%) brightness(1.05);
   /* soft sheen across the top half, layered over the tint: background: var(--glass-sheen), var(--glass) */
   --glass-sheen: linear-gradient(to bottom, rgba(255, 255, 255, .13), rgba(255, 255, 255, .03) 50%, rgba(255, 255, 255, .06));
 }
@@ -252,14 +254,14 @@ main {
 .primary {
   display: block;
   width: 100%;
-  background: linear-gradient(to bottom, #d3f95a, var(--acc));
+  background: linear-gradient(to bottom, #6e6db3, var(--accFill));
   color: var(--accT);
   font-weight: 700;
   border-radius: 62.4375rem;
   padding: 0.875rem;
   margin: 0.375rem 0 0.75rem;
   text-align: center;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 6px 22px rgba(198, 244, 50, .16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 6px 18px rgba(0, 0, 0, .25);
 }
 
 .primary[disabled] {
@@ -385,7 +387,7 @@ input.title {
   padding: 0.5625rem 0.75rem;
   border-radius: 0.625rem;
   background: #1c2420;
-  color: #d6f57a;
+  color: #c6c6e0;
   font-size: 0.875rem;
   font-weight: 600
 }
@@ -614,7 +616,7 @@ h3 {
 
 .target {
   font-size: 0.8125rem;
-  color: #d6f57a;
+  color: #c6c6e0;
   margin: 0.375rem 0.125rem 0
 }
 
@@ -863,8 +865,8 @@ ol li {
   border-radius: 1.875rem;
   border: 1px solid var(--glass-brd);
   background: var(--glass-sheen), rgba(22, 25, 32, .42);
-  backdrop-filter: blur(30px) saturate(200%) brightness(1.08);
-  -webkit-backdrop-filter: blur(30px) saturate(200%) brightness(1.08);
+  backdrop-filter: blur(30px) saturate(130%) brightness(1.04);
+  -webkit-backdrop-filter: blur(30px) saturate(130%) brightness(1.04);
   box-shadow: var(--glass-hi), 0 -10px 40px rgba(0, 0, 0, .4);
   -webkit-overflow-scrolling: touch;
 }
@@ -967,7 +969,7 @@ ol li {
   display: block;
   text-align: left;
   font-size: 0.8125rem;
-  color: #cfe88a;
+  color: #c6c6e0;
   margin: 0 0 0.25rem;
   padding: 0
 }
@@ -1079,11 +1081,11 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60% 34% at 8% 2%, rgba(198, 244, 50, .26), transparent 70%),
+    radial-gradient(60% 34% at 8% 2%, rgba(95, 94, 166, .26), transparent 70%),
     radial-gradient(55% 38% at 104% 30%, rgba(56, 189, 248, .24), transparent 70%),
     radial-gradient(50% 30% at 30% 62%, rgba(139, 92, 246, .14), transparent 70%),
     radial-gradient(65% 36% at 0% 100%, rgba(45, 212, 191, .22), transparent 70%),
-    radial-gradient(45% 28% at 100% 96%, rgba(198, 244, 50, .12), transparent 70%);
+    radial-gradient(45% 28% at 100% 96%, rgba(95, 94, 166, .12), transparent 70%);
 }
 
 /* Top bar: no solid strip. Content blurs and fades out as it scrolls under it. */
@@ -1188,7 +1190,7 @@ body::after {
     top: 0.3125rem;
     bottom: 0.3125rem;
     left: 0.3125rem;
-    width: calc((100% - 0.625rem) / 4);
+    width: calc((100% - 0.625rem) / 5);
     border-radius: 62.4375rem;
     background: linear-gradient(to bottom, rgba(255, 255, 255, .17), rgba(255, 255, 255, .09));
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), inset 0 0 0 1px rgba(255, 255, 255, .06);
@@ -1205,6 +1207,10 @@ body::after {
 
   #tabs:has(button:nth-of-type(4).on)::before {
     transform: translateX(300%);
+  }
+
+  #tabs:has(button:nth-of-type(5).on)::before {
+    transform: translateX(400%);
   }
 }
 
@@ -1371,14 +1377,14 @@ button.card:active {
 
 /* ---------- page transitions (see withTransition in js/actions.js) ---------- */
 /* Switching tabs: the new page fades in. */
+/* A plain, quick fade. No movement or scaling: on a long list that made the cards drift as it played. */
 #main.fadeIn {
-  animation: page-fade .35s cubic-bezier(.3, .7, .2, 1);
+  animation: page-fade .25s ease-out;
 }
 
 @keyframes page-fade {
   from {
     opacity: 0;
-    transform: scale(.985);
   }
 }
 
@@ -1415,4 +1421,607 @@ html {
   position: relative;
   z-index: 1;
   box-shadow: -0.75rem 0 2rem rgba(0, 0, 0, .45);
+}
+
+/* ---------- workout list: date box ---------- */
+.wcard {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.wbody {
+  flex: 1;
+  min-width: 0;
+}
+
+.wbody b {
+  display: block;
+  font-size: 1.0625rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dbox {
+  flex: none;
+  width: 3.75rem;
+  padding: 0.4375rem 0 0.5rem;
+  border-radius: 1rem;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, .1), rgba(255, 255, 255, .05));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 0 0 1px rgba(255, 255, 255, .06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.dmon {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--acc);
+}
+
+.dday {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  margin: 0.25rem 0 0.1875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dwd {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--mut);
+}
+
+/* ---------- set rows: taller, with a small multi-line note ---------- */
+.set {
+  align-items: center;
+  margin: 0.25rem 0;
+}
+
+.set .n,
+.set input,
+.set .note {
+  height: 2.75rem;
+}
+
+/* The note grows to fit what's written (js autoGrow), starting at two short lines. */
+.set textarea.ni,
+.set.done textarea.ni {
+  min-height: 2.75rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--card2);
+  overflow: hidden;
+}
+
+/* ---------- workout notes: one slim line at the top that grows as you type ---------- */
+textarea.wnotes {
+  min-height: 2.375rem;
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  border-radius: 0.875rem;
+  overflow: hidden;
+}
+
+/* ---------- cardio ---------- */
+.cform {
+  padding: 1rem;
+}
+
+.cform .lbl {
+  margin: 0 0.125rem 0.375rem;
+}
+
+.cfield {
+  margin-bottom: 0.875rem;
+}
+
+select.ctype {
+  width: 100%;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  padding: 0.625rem 2.25rem 0.625rem 0.75rem;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--card2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b93a1' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.75rem center / 0.875rem;
+}
+
+.cbig {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+}
+
+.cbig input {
+  height: 3.75rem;
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border-radius: 0.875rem;
+}
+
+.pace {
+  min-height: 1.25rem;
+  margin: 0.625rem 0.125rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--acc);
+  font-variant-numeric: tabular-nums;
+}
+
+.cnote {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-style: italic;
+}
+
+/* =====================================================================================================
+   Apple Liquid Glass pass. Later rules win, so this section refines everything above.
+   Glass reads as glass because of light and thickness, not blur alone:
+     - a richer backdrop for it to show (like a wallpaper behind the dock)
+     - thickness: bright top edge, faint shade inside the bottom edge, soft drop shadow
+     - light: a specular rim (::after, above) and a glossy highlight in the top-left corner
+   Content cards get the same light and thickness but no blur: they sit over a smooth glow, where blur
+   would change nothing visible and only cost scrolling smoothness.
+   ===================================================================================================== */
+:root {
+  --bg: #07080b;
+  /* thickness: top edge catching light, bottom edge in shade, contact shadow */
+  --glass-depth: inset 0 1px 0.5px rgba(255, 255, 255, .38), inset 0 -1px 1px rgba(0, 0, 0, .28), inset 0 0 0 0.5px rgba(255, 255, 255, .06);
+  /* glossy highlight pooled in the top-left corner, where the light comes from */
+  --glass-gloss: radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0) 55%);
+  --glass: rgba(26, 30, 38, .26);
+  --glass-blur: blur(20px) saturate(130%) brightness(1.05);
+  --card: rgba(255, 255, 255, .06);
+  --card2: rgba(255, 255, 255, .085);
+}
+
+/* ---------- backdrop: a dark "wallpaper" with real color in it ---------- */
+body::before {
+  background:
+    radial-gradient(55% 32% at 6% 0%, rgba(95, 94, 166, .3), transparent 72%),
+    radial-gradient(50% 36% at 108% 22%, rgba(70, 120, 150, .2), transparent 72%),
+    radial-gradient(48% 30% at 26% 55%, rgba(110, 90, 150, .13), transparent 72%),
+    radial-gradient(60% 34% at -4% 102%, rgba(60, 120, 120, .18), transparent 72%),
+    radial-gradient(40% 24% at 100% 100%, rgba(95, 94, 166, .16), transparent 72%),
+    linear-gradient(180deg, #07080b, #0a0b10 60%, #07080b);
+}
+
+/* ---------- typography: Apple's large titles and bold section headers ---------- */
+#top h1 {
+  font-size: 2.125rem;
+  font-weight: 800;
+  letter-spacing: -.025em;
+  line-height: 1.1;
+}
+
+/* inside a detail page (next to the back button) the title is the standard inline size */
+#top .backIcon+h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -.015em;
+}
+
+.month {
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -.015em;
+  text-transform: none;
+  margin: 1.5rem 0.25rem 0.625rem;
+}
+
+/* ---------- floating glass: tab bar, sheet, toast, round buttons ---------- */
+#tabs,
+#toast,
+#top .home,
+#top .backIcon {
+  background: var(--glass-gloss), var(--glass-sheen), var(--glass);
+  box-shadow: var(--glass-depth), 0 10px 30px rgba(0, 0, 0, .45), 0 2px 6px rgba(0, 0, 0, .25);
+}
+
+#tabs {
+  padding: 0.375rem;
+}
+
+#tabs button {
+  padding: 0.5rem 0 0.4375rem;
+}
+
+#sheet {
+  background: var(--glass-gloss), var(--glass-sheen), rgba(20, 23, 30, .4);
+  box-shadow: var(--glass-depth), 0 -12px 50px rgba(0, 0, 0, .45);
+}
+
+/* The selected tab: a glossy glass droplet. */
+@supports selector(:has(a)) {
+  #tabs::before {
+    top: 0.375rem;
+    bottom: 0.375rem;
+    left: 0.375rem;
+    width: calc((100% - 0.75rem) / 5);
+    background: radial-gradient(90% 70% at 30% 0%, rgba(255, 255, 255, .26), rgba(255, 255, 255, 0) 70%), linear-gradient(to bottom, rgba(255, 255, 255, .16), rgba(255, 255, 255, .07));
+    box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, .5), inset 0 -1px 1px rgba(0, 0, 0, .2), inset 0 0 0 0.5px rgba(255, 255, 255, .12), 0 4px 14px rgba(0, 0, 0, .25);
+  }
+}
+
+/* Brighter specular rim on everything glass. */
+#tabs::after,
+#sheet::after,
+#toast::after,
+#top .home::after,
+#top .backIcon::after,
+.card::after,
+.stats div::after {
+  background: linear-gradient(150deg, rgba(255, 255, 255, .7), rgba(255, 255, 255, .18) 20%, rgba(255, 255, 255, .03) 48%, rgba(255, 255, 255, .05) 72%, rgba(255, 255, 255, .34));
+}
+
+/* ---------- content cards: glass panes (light and thickness, no blur) ---------- */
+.card,
+.stats div {
+  background: var(--glass-gloss), linear-gradient(to bottom, rgba(255, 255, 255, .07), rgba(255, 255, 255, .035));
+  border-color: rgba(255, 255, 255, .05);
+  box-shadow: var(--glass-depth), 0 8px 24px rgba(0, 0, 0, .28);
+}
+
+.card::after,
+.stats div::after {
+  opacity: .7;
+}
+
+/* Date box: a small glass tile inside the card. */
+.dbox {
+  background: var(--glass-gloss), linear-gradient(to bottom, rgba(255, 255, 255, .13), rgba(255, 255, 255, .05));
+  box-shadow: var(--glass-depth), 0 3px 10px rgba(0, 0, 0, .25);
+}
+
+/* ---------- fields: recessed into the glass ---------- */
+input,
+textarea,
+select,
+.set input,
+.set textarea.ni,
+.set.done textarea.ni,
+.set input.ni {
+  background-color: rgba(0, 0, 0, .24);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .4), inset 0 -1px 0 rgba(255, 255, 255, .07);
+}
+
+/* A done set's numbers sit on the glass itself, not in a well. */
+.set.done input {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+select.ctype {
+  background-color: rgba(0, 0, 0, .24);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(95, 94, 166, .7);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .4), 0 0 0 3px rgba(95, 94, 166, .15);
+}
+
+/* ---------- buttons ---------- */
+/* Lime buttons: tinted glass, with a glossy top and a shaded bottom so they look like a lit lens. */
+.primary,
+.seg button.on {
+  background: radial-gradient(100% 120% at 30% 0%, rgba(255, 255, 255, .3), rgba(255, 255, 255, 0) 55%), linear-gradient(to bottom, #6e6db3, #545396);
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, .7), inset 0 -2px 3px rgba(20, 18, 60, .4), 0 6px 18px rgba(0, 0, 0, .25), 0 2px 6px rgba(0, 0, 0, .3);
+}
+
+/* Gray buttons and chips: clear glass capsules. */
+.ghost,
+.addMedia,
+.seg,
+.stepper {
+  background: var(--glass-gloss), linear-gradient(to bottom, rgba(255, 255, 255, .1), rgba(255, 255, 255, .045));
+  border-color: rgba(255, 255, 255, .07);
+  box-shadow: var(--glass-depth), 0 4px 14px rgba(0, 0, 0, .22);
+}
+
+.ghost {
+  border-radius: 999px;
+}
+
+.ghost.left {
+  border-radius: 1.125rem;
+}
+
+/* ---------- accessibility: keep the plain versions plain ---------- */
+@media (prefers-reduced-transparency: reduce) {
+  body::before {
+    opacity: .35;
+  }
+
+  .card,
+  .stats div,
+  .ghost,
+  .seg,
+  .stepper {
+    background: #14171d;
+  }
+}
+
+@media (prefers-contrast: more) {
+  body::before {
+    opacity: .25;
+  }
+
+  .card,
+  .stats div {
+    background: #15181d;
+    border-color: rgba(255, 255, 255, .32);
+  }
+
+  input,
+  textarea,
+  select,
+  .set input,
+  .set textarea.ni {
+    background-color: #252a32;
+  }
+}
+
+/* =====================================================================================================
+   Theme: neutral dark with a soft blue accent (v34). Colors are sampled exactly from Shep's reference screenshot.
+   Flat, calm surfaces: no colored background glow, no glossy highlights, hairline borders. This section
+   comes last on purpose and overrides the glass styling above; the tab bar and sheets keep a light blur.
+   ===================================================================================================== */
+:root {
+  --bg: #121214;
+  --card: #1c1c1f;
+  --card2: #27272b;
+  --line: #2d2d33;
+  --text: #f4f4f5;
+  --mut: #98989f;
+  --acc: #5987ef;
+  --accFill: #5c8bf7;
+  --accT: #ffffff;
+  --doneBg: rgba(89, 135, 239, .12);
+  --tabbar: #1b1b1e;
+  --tabbar-line: #2b2b30;
+  --glass: rgba(27, 27, 30, .9);
+  --glass-brd: #2b2b30;
+  --glass-hi: none;
+  --glass-blur: blur(20px);
+  --glass-sheen: linear-gradient(transparent, transparent);
+  --glass-gloss: linear-gradient(transparent, transparent);
+  --glass-depth: none;
+}
+
+html,
+body {
+  background: var(--bg);
+}
+
+body::before {
+  display: none;
+}
+
+/* no bright rims */
+#tabs::after,
+#sheet::after,
+#toast::after,
+#top .home::after,
+#top .backIcon::after,
+.card::after,
+.stats div::after {
+  display: none;
+}
+
+/* ---------- cards ---------- */
+.card,
+.stats div {
+  background: var(--card);
+  background-image: none;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  box-shadow: none;
+}
+
+.dbox {
+  width: 3.25rem;
+  padding: 0.4375rem 0 0.4375rem;
+  border-radius: 0.75rem;
+  background: var(--card2);
+  box-shadow: none;
+}
+
+.dmon {
+  color: var(--mut);
+  font-size: 0.625rem;
+}
+
+.dday {
+  font-size: 1.5rem;
+  margin: 0.1875rem 0 0.125rem;
+}
+
+.dwd {
+  font-size: 0.625rem;
+}
+
+.wbody b {
+  font-size: 1.125rem;
+}
+
+/* ---------- buttons ---------- */
+.primary,
+.seg button.on {
+  background: var(--accFill);
+  color: var(--accT);
+  box-shadow: none;
+}
+
+.primary {
+  border-radius: 0.875rem;
+}
+
+.ghost,
+.addMedia,
+.seg,
+.stepper {
+  background: var(--card2);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.ghost {
+  border-radius: 0.875rem;
+}
+
+.ghost.left {
+  border-radius: 0.875rem;
+}
+
+/* ---------- fields: flat ---------- */
+input,
+textarea,
+select,
+.set input,
+.set textarea.ni,
+.set.done textarea.ni,
+.set input.ni,
+select.ctype {
+  background-color: var(--card2);
+  box-shadow: none;
+}
+
+.set.done input {
+  background-color: transparent;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--acc);
+  box-shadow: 0 0 0 3px rgba(89, 135, 239, .18);
+}
+
+/* ---------- floating bars and sheets: quiet, lightly blurred ---------- */
+#tabs {
+  border-radius: 1.25rem;
+  border: 1px solid var(--tabbar-line);
+  background: var(--tabbar);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+}
+
+/* the selected tab is shown by its blue color only */
+@supports selector(:has(a)) {
+  #tabs::before {
+    display: none;
+  }
+}
+
+#tabs button.on {
+  background: none;
+}
+
+#top .home,
+#top .backIcon {
+  background: var(--card2);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+#sheet {
+  background: rgba(28, 28, 31, .96);
+  border: 1px solid var(--line);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, .5);
+}
+
+#toast {
+  background: rgba(38, 38, 42, .96);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+}
+
+/* top bar: content fades into the plain background */
+#top::before {
+  background: linear-gradient(to bottom, rgba(18, 18, 20, .97) 55%, rgba(18, 18, 20, .75) 80%, rgba(18, 18, 20, 0));
+}
+
+body::after {
+  background: linear-gradient(to top, rgba(18, 18, 20, .96) 25%, rgba(18, 18, 20, 0));
+}
+
+/* ---------- small accents ---------- */
+.sync.synced {
+  background: #6ad09d;
+}
+
+.mline,
+.target {
+  color: #a9bdf0;
+}
+
+.pageCover {
+  background: var(--bg);
+}
+
+/* ---------- workout list card: date | name | exercise list ---------- */
+.wcard.lift {
+  display: grid;
+  grid-template-columns: auto minmax(0, 0.9fr) minmax(0, 1.25fr);
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.wmain {
+  min-width: 0;
+}
+
+.wname {
+  display: block;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -.015em;
+  /* long names wrap onto a second line rather than being cut off */
+  overflow-wrap: anywhere;
+}
+
+.wstats {
+  margin-top: 0.3125rem;
+  font-size: 0.75rem;
+  color: var(--mut);
+  line-height: 1.3;
+}
+
+.wex {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.75rem;
+  border-left: 1px solid var(--line);
+  min-width: 0;
+}
+
+.wex li {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #c8c8cd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wex li.more {
+  color: var(--mut);
 }

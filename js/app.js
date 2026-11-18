@@ -33,21 +33,14 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-a],[data-tab]');
   if (!b) return;
   if (b.dataset.tab) {
-    const t = b.dataset.tab;
-    if (t === view.tab) go({
-      log: {
-        workoutId: null
-      },
-      ex: {
-        exerciseId: null
-      },
-      rt: {
-        routineId: null
-      }
-    } [t] || {});
-    else go({
-      tab: t
-    })
+    // A tab always opens on its main list, never on whatever was left open inside it.
+    go({
+      tab: b.dataset.tab,
+      workoutId: null,
+      exerciseId: null,
+      routineId: null,
+      cardioId: null
+    });
     return
   }
   const fn = ACT[b.dataset.a];
@@ -113,6 +106,30 @@ document.addEventListener('input', e => {
       }
     }
     touchW(w, pm);
+    return
+  }
+  if (['cType', 'cDate', 'cMin', 'cDist', 'cNote'].includes(f)) {
+    const c = S.workouts[view.cardioId];
+    if (!c) return;
+    const pm = monthOf(c);
+    if (f === 'cDate') {
+      if (!t.value) return;
+      c.date = t.value
+    } else c[{
+      cType: 'type',
+      cMin: 'min',
+      cDist: 'dist',
+      cNote: 'note'
+    } [f]] = t.value;
+    touchW(c, pm);
+    if (f === 'cType') {
+      // new type → new title and new hints, without losing focus or scroll
+      renderTop();
+      const last = lastCardio(c.type, c);
+      $('[data-f="cMin"]').placeholder = last && last.min !== '' ? last.min : '0';
+      $('[data-f="cDist"]').placeholder = last && last.dist !== '' ? last.dist : '0'
+    }
+    $('#cPace').textContent = paceText(c);
     return
   }
   const ex = S.exercises[t.dataset.id];

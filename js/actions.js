@@ -85,6 +85,9 @@ const ACT = {
       },
       rt: {
         routineId: null
+      },
+      cd: {
+        cardioId: null
       }
     } [view.tab] || {})
   },
@@ -362,7 +365,8 @@ const ACT = {
       tab: 'log',
       workoutId: null,
       exerciseId: null,
-      routineId: null
+      routineId: null,
+      cardioId: null
     })
   },
   toggleWarm(d) {
@@ -425,6 +429,43 @@ const ACT = {
   },
   machine(d) {
     sheetMachine(d.id)
+  },
+  logCardio() {
+    // start with the type logged most recently, so a regular run is one tap
+    const prev = liveC().sort(sortW)[0];
+    const c = {
+      id: newId(),
+      kind: 'cardio',
+      date: today(),
+      type: prev ? prev.type : 'Run',
+      min: '',
+      dist: '',
+      du: distUnit(),
+      note: '',
+      entries: [],
+      createdAt: now(),
+      updatedAt: now()
+    };
+    S.workouts[c.id] = c;
+    touchW(c);
+    go({
+      tab: 'cd',
+      cardioId: c.id
+    })
+  },
+  openCardio(d) {
+    go({
+      cardioId: d.id
+    })
+  },
+  delCardio() {
+    confirmSheet('Delete this cardio session?', 'This can’t be undone.', 'Delete', () => {
+      const c = S.workouts[view.cardioId];
+      if (!c) return;
+      c.deleted = true;
+      touchW(c);
+      view.cardioId = null
+    })
   },
   delW() {
     confirmSheet('Delete this workout?', 'This can’t be undone.', 'Delete workout', () => {

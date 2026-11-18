@@ -79,7 +79,8 @@ function pageDepth(v) {
   return ({
     log: v.workoutId,
     ex: v.exerciseId,
-    rt: v.routineId
+    rt: v.routineId,
+    cd: v.cardioId
   } [v.tab]) ? 1 : 0
 }
 
@@ -359,6 +360,9 @@ function backState() {
     },
     rt: {
       routineId: null
+    },
+    cd: {
+      cardioId: null
     }
   })[view.tab] || null
 }
@@ -368,7 +372,8 @@ function makeUnderPage() {
   const list = ({
     log: vLog,
     ex: vExList,
-    rt: vRoutines
+    rt: vRoutines,
+    cd: vCardioList
   })[view.tab];
   const main = $('#main'),
     r = main.getBoundingClientRect();

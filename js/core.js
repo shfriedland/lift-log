@@ -1,7 +1,7 @@
 // Helpers, app state, and the data model (workouts, exercises, routines, history lookups).
 "use strict";
 
-const APP_VERSION = 27; // keep in step with the cache name in sw.js
+const APP_VERSION = 36; // keep in step with the cache name in sw.js
 const LS = 'liftlog.v1',
   LSV = 'liftlog.view';
 const $ = s => document.querySelector(s);
@@ -127,7 +127,8 @@ let view = {
   tab: 'log',
   workoutId: null,
   exerciseId: null,
-  routineId: null
+  routineId: null,
+  cardioId: null
 };
 let sheetCtx = null;
 const openNotes = new Set();
@@ -155,7 +156,7 @@ function saveView() {
     localStorage.setItem(LSV, JSON.stringify(view))
   } catch (e) {}
 }
-const liveW = () => Object.values(S.workouts).filter(w => !w.deleted);
+const liveW = () => Object.values(S.workouts).filter(w => !w.deleted && !isCardio(w)); // lifting workouts only
 const liveEx = () => Object.values(S.exercises).filter(e => !e.deleted);
 const liveR = () => Object.values(S.routines || {}).filter(r => !r.deleted).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 const tgtLow = t => {
@@ -276,4 +277,55 @@ function e1rm(s) {
     r = num(s.r);
   if (!w || !r || r > 15) return 0;
   return r === 1 ? w : w * (1 + r / 30)
+}
+
+// ---------- cardio ----------
+// A cardio session is stored in S.workouts like a workout, marked kind: 'cardio', so sync, backup and restore
+// handle it unchanged. It's kept out of everything lifting-related by liveW(); liveC() lists the sessions.
+//   {id, kind: 'cardio', date, type, min, dist, du, note, entries: [], createdAt, updatedAt, deleted?}
+// min and dist are strings exactly as typed; du is the distance unit ('mi' or 'km'), fixed when it's logged.
+const CARDIO_TYPES = ['Run', 'Walk', 'Treadmill', 'Bike', 'Row', 'Elliptical', 'Stair climber', 'Swim', 'Hike', 'Other'];
+const distUnit = () => S.unit === 'kg' ? 'km' : 'mi';
+const isCardio = w => w.kind === 'cardio';
+const liveC = () => Object.values(S.workouts).filter(w => !w.deleted && isCardio(w));
+
+// Minutes from what was typed: "30", "30.5", "32:15" (min:sec) or "1:05:00" (h:min:sec).
+function parseMinutes(v) {
+  v = String(v ?? '').trim();
+  if (!v) return NaN;
+  if (v.includes(':')) {
+    const p = v.split(':').map(Number);
+    if (p.some(isNaN)) return NaN;
+    return p.length === 3 ? p[0] * 60 + p[1] + p[2] / 60 : p[0] + p[1] / 60
+  }
+  return num(v)
+}
+
+// "Pace 9:42 /mi" when there's both a time and a distance. Biking shows speed instead ("Speed 16.0 mph").
+function paceText(c) {
+  const m = parseMinutes(c.min),
+    d = num(c.dist);
+  if (!(m > 0) || !(d > 0)) return '';
+  if (c.type === 'Bike') return 'Speed ' + (d / (m / 60)).toFixed(1) + ((c.du || 'mi') === 'km' ? ' km/h' : ' mph');
+  const secs = Math.round(m * 60 / d);
+  return 'Pace ' + Math.floor(secs / 60) + ':' + pad(secs % 60) + ' /' + (c.du || 'mi')
+}
+
+// Short summary for lists, e.g. "3.1 mi · 30 min".
+function cardioSummary(c) {
+  const bits = [];
+  if (c.dist !== '' && c.dist != null) bits.push(c.dist + ' ' + (c.du || 'mi'));
+  if (c.min !== '' && c.min != null) bits.push(c.min + (String(c.min).includes(':') ? '' : ' min'));
+  return bits.join(' · ')
+}
+
+// The most recent earlier session of the same type, for the faint hints in the time and distance boxes.
+function lastCardio(type, cur) {
+  let best = null;
+  for (const c of liveC()) {
+    if (cur && (c.id === cur.id || (cur.date && c.date > cur.date))) continue;
+    if (c.type !== type || (c.min === '' && c.dist === '')) continue;
+    if (!best || sortW(c, best) < 0) best = c
+  }
+  return best
 }
