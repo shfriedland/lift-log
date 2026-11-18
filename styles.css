@@ -2039,10 +2039,11 @@ body::after {
    scroll height changes (e.g. a long Workouts list replaced by the short Cardio list), and in the browser
    its toolbar expands when the window scrolls to the top. With the window never scrolling, neither can
    happen, so the tab bar stays exactly in place. */
+/* The page itself is left at its natural size (no height: 100% / overflow: hidden here: on iPhone home-screen
+   apps "100%" can come out shorter than the screen, which lifted the tab bar). It can't scroll anyway,
+   because everything on it is pinned: the frame, the tab bar, sheets and toast. */
 html,
 body {
-  height: 100%;
-  overflow: hidden;
   overscroll-behavior: none;
 }
 
