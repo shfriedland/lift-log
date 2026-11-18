@@ -27,6 +27,10 @@ No build step and no dependencies: the browser loads these files directly. Keep 
 - Pushing to `main` publishes to GitHub Pages in about a minute.
 - To test locally, use VS Code's Live Server (`http://127.0.0.1:5500`). The service worker only registers on https, so local testing never gets stuck on a cached copy.
 
+## Scrolling (important)
+
+- **The window never scrolls.** The title bar (`#top`, sticky) and page (`#main`) scroll inside `#scroller`, a frame pinned to the screen; the tab bar, sheets and toast sit outside it. This is what keeps the tab bar from moving on iPhone (Safari moved it when the window's scroll height changed, e.g. switching from a long Workouts list to the short Cardio list). Use `scrollToTop()` (in `js/core.js`), never `window.scrollTo`, and anything that reads scroll position must read `#scroller.scrollTop`.
+
 ## Data
 
 - On the phone, state lives in `localStorage` (`liftlog.v1`). Photos and videos are stored in IndexedDB (`liftlog-media`).
@@ -60,7 +64,7 @@ No build step and no dependencies: the browser loads these files directly. Keep 
 - Set videos belong to one specific set and show in that exercise's history. "Progress check" photos and videos belong to the whole workout.
 - Rep Count CSV import: a new workout starts whenever the workout name **or** the "Workout Start" time changes from the row above. Muscle group comes from the Category column.
 - Motion follows Apple's fluid-interface rules (the `apple-design` skill in `.claude/skills/` has the full guidance), all in `js/motion.js`:
-  - Page changes go through `go()` → `withTransition`: opening slides in from the right, going back slides out to the right, switching tabs is a plain opacity fade (no scaling or movement, which made long lists drift) while the tab highlight slides. Tapping a tab always opens that tab's main list, never a page left open inside it. `go()` scrolls to the top *before* rendering the new page, and the page has `overscroll-behavior-y: none`: both keep iPhone Safari from knocking the fixed tab bar out of place. The slide keeps a short-lived copy of the old page (`.pageGhost`). It does not use the View Transitions API, because that froze the glass bars into flat snapshots.
+  - Page changes go through `go()` → `withTransition`: opening slides in from the right, going back slides out to the right, switching tabs is a plain opacity fade (no scaling or movement, which made long lists drift) while the tab highlight slides. Tapping a tab always opens that tab's main list, never a page left open inside it. The slide keeps a short-lived copy of the old page (`.pageGhost`). It does not use the View Transitions API, because that froze the glass bars into flat snapshots.
   - Sheets open and close with springs (`showSheet` / `hideSheet`, never by toggling the `on` class directly) and can be dragged shut by the strip at the top (`#sheetGrab`): 1:1 with the finger, rubber-band when pulled up, flick to dismiss.
   - Animations start from where things currently are and never block taps. No bounce unless a flick caused the motion. Pressed states show within 0.1s.
   - Swipe from the left edge (within 24px) on a workout, exercise or routine to go back: the page follows the finger over a copy of the list (`.pageUnder`); past halfway or a flick commits, otherwise it springs back.

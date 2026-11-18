@@ -416,7 +416,7 @@ function endSwipe(committed) {
     Object.assign(view, backState());
     openNotes.clear();
     render();
-    window.scrollTo(0, 0)
+    scrollToTop()
   }
 }
 

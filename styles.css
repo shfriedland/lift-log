@@ -2033,9 +2033,30 @@ body::after {
   color: var(--mut);
 }
 
-/* No rubber-band bounce on the page. On a short page (like the Cardio list) iPhone's bounce could drag the
-   fixed tab bar up out of its spot. */
+/* ---------- app frame ----------
+   The window never scrolls. The title bar and page content scroll inside #scroller, a frame pinned to the
+   screen; the tab bar, sheets and toast sit outside it. On iPhone, Safari moves fixed bars when the window's
+   scroll height changes (e.g. a long Workouts list replaced by the short Cardio list), and in the browser
+   its toolbar expands when the window scrolls to the top. With the window never scrolling, neither can
+   happen, so the tab bar stays exactly in place. */
 html,
 body {
-  overscroll-behavior-y: none;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  padding: 0;
+}
+
+#scroller {
+  position: fixed;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* the frame can still bounce, without moving anything outside it */
+  overscroll-behavior-y: contain;
+  padding-bottom: calc(5.75rem + env(safe-area-inset-bottom));
 }

@@ -10,7 +10,7 @@ function go(v) {
     openNotes.clear();
     // Jump to the top before swapping in the new page, so the page never shrinks while scrolled down.
     // On iPhone that shrink could make the fixed tab bar jump out of place.
-    window.scrollTo(0, 0);
+    scrollToTop();
     render()
   })
 }
@@ -490,7 +490,7 @@ const ACT = {
     const fn = sheetCtx && sheetCtx.fn;
     if (fn) fn();
     closeSheet();
-    window.scrollTo(0, 0)
+    scrollToTop()
   },
   closeSheet,
   unit(d) {

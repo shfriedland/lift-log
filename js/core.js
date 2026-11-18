@@ -1,7 +1,7 @@
 // Helpers, app state, and the data model (workouts, exercises, routines, history lookups).
 "use strict";
 
-const APP_VERSION = 38; // keep in step with the cache name in sw.js
+const APP_VERSION = 39; // keep in step with the cache name in sw.js
 const LS = 'liftlog.v1',
   LSV = 'liftlog.view';
 const $ = s => document.querySelector(s);
@@ -37,6 +37,11 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') applyTextSize() // came back after changing the setting
 });
 
+// The page content scrolls inside #scroller (the window itself never scrolls; see styles.css).
+const scrollToTop = () => {
+  const sc = document.getElementById('scroller');
+  if (sc) sc.scrollTop = 0
+};
 const now = () => Date.now();
 const newId = () => now().toString(36) + Math.random().toString(36).slice(2, 7);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
