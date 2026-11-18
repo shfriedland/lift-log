@@ -8,8 +8,10 @@ function go(v) {
   Object.assign(view, v);
   withTransition(navDirection(from, view), () => {
     openNotes.clear();
-    render();
-    window.scrollTo(0, 0)
+    // Jump to the top before swapping in the new page, so the page never shrinks while scrolled down.
+    // On iPhone that shrink could make the fixed tab bar jump out of place.
+    window.scrollTo(0, 0);
+    render()
   })
 }
 
