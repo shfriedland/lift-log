@@ -33,14 +33,18 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-a],[data-tab]');
   if (!b) return;
   if (b.dataset.tab) {
-    // A tab always opens on its main list, never on whatever was left open inside it.
+    // A tab opens on its main list, never on whatever was left open inside it, with one exception:
+    // coming to Workouts from another tab while a workout is in progress opens that workout.
+    // Tapping Workouts while already on it always goes to the list, so the list is never out of reach.
+    const t = b.dataset.tab,
+      active = t === 'log' && view.tab !== 'log' ? activeWorkout() : null;
     go({
-      tab: b.dataset.tab,
-      workoutId: null,
+      tab: t,
+      workoutId: active ? active.id : null,
       exerciseId: null,
       routineId: null,
       cardioId: null
-    });
+    }, 'fade');
     return
   }
   const fn = ACT[b.dataset.a];

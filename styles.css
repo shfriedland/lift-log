@@ -2072,3 +2072,48 @@ body {
   overscroll-behavior-y: contain;
   padding-bottom: calc(5.75rem + env(safe-area-inset-bottom));
 }
+
+/* Date fields: iPhone gives them a built-in minimum width and centers the date, which pushed the field past
+   the edge of its card. Make them fit their box and line up on the left like the other fields. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2.75rem;
+  text-align: left;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+}
+
+/* ---------- bottom fix for iPhones that report a too-short screen (see fixViewport in js/core.js) ----------
+   --vfix is 0 everywhere except those phones, where it's the missing height. Every piece pinned to the bottom
+   moves down by it, and the scrolling frame grows to the real bottom of the screen. */
+:root {
+  --vfix: 0px;
+}
+
+#tabs {
+  bottom: calc(max(0.625rem, calc(env(safe-area-inset-bottom) - 0.625rem)) - var(--vfix));
+}
+
+#scroller {
+  bottom: calc(-1 * var(--vfix));
+}
+
+body::after {
+  bottom: calc(-1 * var(--vfix));
+}
+
+#sheetWrap {
+  bottom: calc(-1 * var(--vfix));
+}
+
+#toast {
+  bottom: calc(6.5rem + env(safe-area-inset-bottom) - var(--vfix));
+}

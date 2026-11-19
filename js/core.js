@@ -1,7 +1,7 @@
 // Helpers, app state, and the data model (workouts, exercises, routines, history lookups).
 "use strict";
 
-const APP_VERSION = 41; // keep in step with the cache name in sw.js
+const APP_VERSION = 43; // keep in step with the cache name in sw.js
 const LS = 'liftlog.v1',
   LSV = 'liftlog.view';
 const $ = s => document.querySelector(s);
@@ -33,8 +33,41 @@ function applyTextSize() {
   document.documentElement.style.fontSize = scale === 1 ? '' : (16 * scale).toFixed(2) + 'px'
 }
 applyTextSize();
+
+// Some iPhones, as home-screen apps, report the app's screen as shorter than it really is: short by exactly the
+// status bar (59pt on Dynamic Island phones). Everything pinned to "the bottom" then sits that much too high:
+// the tab bar, the bottom fade, sheets, the toast. Compare the real screen height with the height we're
+// given, and if they differ by about a status bar, push those pieces down by the difference (--vfix in
+// styles.css). A phone that reports the right height gets 0, so nothing changes there.
+const viewportFix = {
+  px: 0,
+  screen: 0,
+  view: 0
+};
+
+function fixViewport() {
+  let px = 0;
+  const standalone = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  const portrait = window.innerHeight > window.innerWidth;
+  const screenH = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width);
+  const viewH = window.innerHeight;
+  if (standalone && /iPhone|iPod/.test(navigator.userAgent)) {
+    const gap = Math.round(screenH - viewH);
+    if (gap >= 15 && gap <= 70) px = gap // about a status bar; anything else is left alone
+  }
+  viewportFix.px = px;
+  viewportFix.screen = Math.round(screenH);
+  viewportFix.view = Math.round(viewH);
+  document.documentElement.style.setProperty('--vfix', px + 'px')
+}
+fixViewport();
+window.addEventListener('resize', fixViewport);
+window.addEventListener('orientationchange', () => setTimeout(fixViewport, 300));
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') applyTextSize() // came back after changing the setting
+  if (document.visibilityState === 'visible') {
+    applyTextSize(); // came back after changing the setting
+    fixViewport()
+  }
 });
 
 // The page content scrolls inside #scroller (the window itself never scrolls; see styles.css).
@@ -282,6 +315,18 @@ function e1rm(s) {
     r = num(s.r);
   if (!w || !r || r > 15) return 0;
   return r === 1 ? w : w * (1 + r / 30)
+}
+
+// The lifting workout in progress, if any: started today, not finished, under 8 hours old.
+// It's the same rule that keeps the workout timer running.
+function activeWorkout() {
+  let best = null;
+  for (const w of liveW()) {
+    const age = now() - (w.createdAt || 0);
+    if (w.finishedAt || w.date !== today() || age < 0 || age > 8 * 3600e3) continue;
+    if (!best || (w.createdAt || 0) > (best.createdAt || 0)) best = w
+  }
+  return best
 }
 
 // ---------- cardio ----------

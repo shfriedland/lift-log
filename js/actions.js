@@ -3,10 +3,10 @@
 
 const curW = () => S.workouts[view.workoutId];
 
-function go(v) {
+function go(v, dir) {
   const from = Object.assign({}, view);
   Object.assign(view, v);
-  withTransition(navDirection(from, view), () => {
+  withTransition(dir || navDirection(from, view), () => {
     openNotes.clear();
     // Jump to the top before swapping in the new page, so the page never shrinks while scrolled down.
     // On iPhone that shrink could make the fixed tab bar jump out of place.
