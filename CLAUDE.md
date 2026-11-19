@@ -29,7 +29,7 @@ No build step and no dependencies: the browser loads these files directly. Keep 
 
 ## Scrolling (important)
 
-- **The window never scrolls.** The title bar (`#top`, sticky) and page (`#main`) scroll inside `#scroller`, a frame pinned to the screen; the tab bar, sheets and toast sit outside it. This is what keeps the tab bar from moving on iPhone (Safari moved it when the window's scroll height changed, e.g. switching from a long Workouts list to the short Cardio list). Use `scrollToTop()` (in `js/core.js`), never `window.scrollTo`, and anything that reads scroll position must read `#scroller.scrollTop`. Don't give `html`/`body` `height: 100%` or `overflow: hidden`: on iPhone home-screen apps that made the page shorter than the screen and lifted the tab bar (v39). The window can't scroll anyway, since nothing on the page is in normal flow.
+- **The window never scrolls.** The title bar (`#top`, sticky) and page (`#main`) scroll inside `#scroller`, a frame pinned to the screen; the tab bar, sheets and toast sit outside it. This is what keeps the tab bar from moving on iPhone (Safari moved it when the window's scroll height changed, e.g. switching from a long Workouts list to the short Cardio list). Use `scrollToTop()` (in `js/core.js`), never `window.scrollTo`, and anything that reads scroll position must read `#scroller.scrollTop`. **`html` and `body` must stay exactly one screen tall** (`min-height: 100lvh`): on iPhone home-screen apps, a page shorter than the screen makes fixed bars sit too high (seen on the short Cardio list before v39, and on every tab in v39–40). Don't use `height: 100%` or `overflow: hidden` on them either (v39 made the page short that way). The window still can't scroll, since everything on the page is pinned.
 
 ## Data
 

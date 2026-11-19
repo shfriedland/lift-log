@@ -2047,8 +2047,19 @@ body {
   overscroll-behavior: none;
 }
 
+/* Always exactly one screen tall. On iPhone home-screen apps, when the page is shorter than the screen the
+   bottom edge that fixed bars sit on is measured higher up, so the tab bar floats too high (that's what
+   happened on the short Cardio list before v39, and on every tab in v39-40 when the page held nothing in
+   normal flow). lvh is the full screen height; the plain vh line is the fallback for older Safari. */
+html {
+  min-height: 100vh;
+  min-height: 100lvh;
+}
+
 body {
   padding: 0;
+  min-height: 100vh;
+  min-height: 100lvh;
 }
 
 #scroller {
