@@ -222,7 +222,7 @@ function vSettings() {
     <label class="filebtn ghost">Restore from a backup file<input type="file" accept=".json,.txt,application/json,text/plain" id="jsonFile" hidden></label>
     <button class="ghost" data-a="pasteRestore">Restore from pasted text</button></div>
   <div class="mut sm center">${liveW().length} workouts · ${liveC().length} cardio · ${liveEx().length} exercises · app version ${APP_VERSION}</div>
-  <div class="mut center" style="font-size:0.6875rem;margin-top:0.25rem;opacity:.7">screen ${viewportFix.screen} · view ${viewportFix.view} · bottom fix ${viewportFix.px}</div>`
+  <div class="mut center" style="font-size:0.6875rem;margin-top:0.25rem;opacity:.7">screen ${viewportFix.screen} · bottom at ${viewportFix.bottom} · bottom fix ${viewportFix.px}</div>`
 }
 
 function vRoutines() {

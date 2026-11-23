@@ -1,7 +1,7 @@
 // Helpers, app state, and the data model (workouts, exercises, routines, history lookups).
 "use strict";
 
-const APP_VERSION = 43; // keep in step with the cache name in sw.js
+const APP_VERSION = 44; // keep in step with the cache name in sw.js
 const LS = 'liftlog.v1',
   LSV = 'liftlog.view';
 const $ = s => document.querySelector(s);
@@ -34,39 +34,59 @@ function applyTextSize() {
 }
 applyTextSize();
 
-// Some iPhones, as home-screen apps, report the app's screen as shorter than it really is: short by exactly the
-// status bar (59pt on Dynamic Island phones). Everything pinned to "the bottom" then sits that much too high:
-// the tab bar, the bottom fade, sheets, the toast. Compare the real screen height with the height we're
-// given, and if they differ by about a status bar, push those pieces down by the difference (--vfix in
-// styles.css). A phone that reports the right height gets 0, so nothing changes there.
+// Some iPhones, as home-screen apps, lay out "the bottom of the screen" higher than it really is: short by
+// exactly the status bar (59pt on Dynamic Island phones), so everything pinned to the bottom (tab bar, bottom
+// fade, sheets, toast) sits that much too high. And they don't do it consistently: after coming back from the
+// background the layout can be right again.
+// So don't trust the reported window height. Measure where the bottom actually is, with an invisible marker
+// pinned to the bottom edge, compare that with the real screen height, and shift those pieces down by the
+// difference (--vfix in styles.css). Re-checked every couple of seconds and on every resume, so if the phone
+// changes its mind the bar follows within a moment. A phone that lays out correctly always gets 0.
 const viewportFix = {
   px: 0,
   screen: 0,
-  view: 0
+  bottom: 0
 };
+let vfixProbe = null;
 
 function fixViewport() {
-  let px = 0;
-  const standalone = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  if (!document.body) return;
+  if (!vfixProbe) {
+    vfixProbe = document.createElement('div');
+    vfixProbe.setAttribute('aria-hidden', 'true');
+    vfixProbe.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:1px;visibility:hidden;pointer-events:none';
+    document.body.appendChild(vfixProbe)
+  }
+  const bottom = vfixProbe.getBoundingClientRect().bottom; // where "the bottom" is really laid out
   const portrait = window.innerHeight > window.innerWidth;
   const screenH = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width);
-  const viewH = window.innerHeight;
+  const standalone = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  let px = 0;
   if (standalone && /iPhone|iPod/.test(navigator.userAgent)) {
-    const gap = Math.round(screenH - viewH);
+    const gap = Math.round(screenH - bottom);
     if (gap >= 15 && gap <= 70) px = gap // about a status bar; anything else is left alone
   }
-  viewportFix.px = px;
   viewportFix.screen = Math.round(screenH);
-  viewportFix.view = Math.round(viewH);
-  document.documentElement.style.setProperty('--vfix', px + 'px')
+  viewportFix.bottom = Math.round(bottom);
+  if (px !== viewportFix.px || !viewportFix.set) {
+    viewportFix.px = px;
+    viewportFix.set = true;
+    document.documentElement.style.setProperty('--vfix', px + 'px')
+  }
 }
 fixViewport();
 window.addEventListener('resize', fixViewport);
+if (window.visualViewport) visualViewport.addEventListener('resize', fixViewport);
 window.addEventListener('orientationchange', () => setTimeout(fixViewport, 300));
+window.addEventListener('pageshow', fixViewport);
+setInterval(() => {
+  if (document.visibilityState === 'visible') fixViewport()
+}, 2000);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     applyTextSize(); // came back after changing the setting
-    fixViewport()
+    // the phone may finish adjusting its layout a moment after the app comes back
+    [0, 150, 500, 1200].forEach(ms => setTimeout(fixViewport, ms))
   }
 });
 
