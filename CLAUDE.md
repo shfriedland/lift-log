@@ -19,7 +19,7 @@ No build step and no dependencies: the browser loads these files directly. Keep 
   - `actions.js`: `ACT`, the handlers for every `data-a="..."` button.
   - `app.js`: event wiring and startup. Must load last.
 - `sw.js` is the service worker for offline use. It fetches the latest files when online and falls back to its cache when offline. **When you add, rename or remove a file, update its `F` list.**
-- `manifest.json` and `icon-*.png` handle the home-screen install.
+- `manifest.json` and `icon-*.png` handle the home-screen install. `icon.svg` is the logo's source (Shep's design: a log book with a blue spine and a dumbbell) and the browser-tab icon; the PNGs (180, 192, 512) are rendered from it at full bleed, square, with no rounded corners, because iOS rounds them itself. To change the logo, edit `icon.svg` and re-render the PNGs.
 
 ## Shipping a change
 
